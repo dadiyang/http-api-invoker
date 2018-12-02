@@ -15,7 +15,7 @@ import java.util.List;
  * @author huangxuyang
  * @date 2018/11/1
  */
-@HttpApi(prefix = "${host}")
+@HttpApi(prefix = "${api.url.city.host}")
 public interface CityService {
     /**
      * 使用URI，会自动添加prefix指定的前缀

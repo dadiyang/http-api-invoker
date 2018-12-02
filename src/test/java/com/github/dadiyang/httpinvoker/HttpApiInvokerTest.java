@@ -31,7 +31,7 @@ public class HttpApiInvokerTest {
     public void setUp() throws Exception {
         Properties properties = new Properties();
         properties.load(HttpApiInvokerTest.class.getClassLoader().getResourceAsStream("conf.properties"));
-        host = properties.get("host").toString();
+        host = properties.get("api.url.city.host").toString();
         System.out.println("Mock requestor");
         requestor = mock(Requestor.class);
         service = new HttpApiProxyFactory(requestor, properties).getProxy(CityService.class);

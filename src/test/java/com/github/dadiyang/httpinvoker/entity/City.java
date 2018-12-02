@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * @ClassName: City
  * @Description: 城市
- * @author: huangxuyang-sz
+ * @author: huangxuyang
  * @date: 2017年8月29日
  */
 public class City {

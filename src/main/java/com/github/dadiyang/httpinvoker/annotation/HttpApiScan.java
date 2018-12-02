@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * Similar to @ComponentScan in Spring,
  * the {@link #value} specify the base packages the {@link HttpApiConfigurer } would scan.
  * <p>
- * this {@link #configPaths}  specify the config files paths
+ * {@link #configPaths} specify the config files paths
  * <p>
  * If specific packages are not defined, scanning will occur from the package of the class that declares this annotation.
  *
