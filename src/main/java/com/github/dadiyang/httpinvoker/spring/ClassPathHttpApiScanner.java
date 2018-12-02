@@ -21,7 +21,7 @@ import java.util.Set;
  * scan the given basePackages and register bean of includeAnn-annotated interfaces' implementation that HttpProxyBeanFactory generated
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     private Class<? extends FactoryBean> factoryBean;

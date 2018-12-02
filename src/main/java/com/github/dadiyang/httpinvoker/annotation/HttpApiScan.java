@@ -13,7 +13,7 @@ import java.lang.annotation.*;
  * If specific packages are not defined, scanning will occur from the package of the class that declares this annotation.
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

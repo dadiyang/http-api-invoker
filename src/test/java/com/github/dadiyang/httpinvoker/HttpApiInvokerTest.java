@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
  * HttpApiInvoker 完整单元测试
  *
  * @author huangxuyang
- * @date 2018/11/27
+ * date 2018/11/27
  */
 public class HttpApiInvokerTest {
     private Requestor requestor;

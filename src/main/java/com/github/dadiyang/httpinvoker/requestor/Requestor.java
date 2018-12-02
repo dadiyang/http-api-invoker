@@ -9,7 +9,7 @@ import java.util.Map;
  * 发送请求的工具
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 public interface Requestor {
     /**

@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A factory to create HttpApiInvoker
  *
  * @author huangxuyang
- * @date 2018/10/30
+ * date 2018/10/30
  */
 public class HttpApiProxyFactory {
     private Map<Class<?>, Object> instances = new ConcurrentHashMap<>();

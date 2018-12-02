@@ -13,7 +13,7 @@ import java.util.List;
  * a example interface for testing
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 @HttpApi(prefix = "${api.url.city.host}")
 public interface CityService {

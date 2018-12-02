@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * and {@link #timeout} provides the request timeout.
  *
  * @author huangxuyang
- * @date 2018/10/30
+ * date 2018/10/30
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)

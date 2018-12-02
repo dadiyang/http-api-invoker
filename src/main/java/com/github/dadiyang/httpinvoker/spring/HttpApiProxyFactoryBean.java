@@ -10,7 +10,7 @@ import java.util.Properties;
  * A factory bean which produce HttpApi interface's implement by using proxyFactory
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
     private HttpApiProxyFactory proxyFactory;

@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * And then parse the response body to the return value(if it has) using FastJson, generic type is also supported.
  *
  * @author huangxuyang
- * @date 2018/11/27
+ * date 2018/11/27
  */
 public class HttpApiInvoker implements InvocationHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpApiInvoker.class);

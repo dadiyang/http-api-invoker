@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author huangxuyang
- * @date 2018/11/27
+ * date 2018/11/27
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestApplication.class)

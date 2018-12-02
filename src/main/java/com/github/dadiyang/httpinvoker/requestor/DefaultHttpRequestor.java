@@ -16,12 +16,12 @@ import java.util.Map;
  * the parameter will be formatted according to the request method.
  *
  * @author huangxuyang
- * @date 2018/11/1
+ * date 2018/11/1
  */
 public class DefaultHttpRequestor implements Requestor {
     private static final Logger log = LoggerFactory.getLogger(Requestor.class);
-    public static final int OK_CODE_L = 200;
-    public static final int OK_CODE_H = 300;
+    private static final int OK_CODE_L = 200;
+    private static final int OK_CODE_H = 300;
 
     /**
      * {@inheritDoc}
@@ -60,14 +60,17 @@ public class DefaultHttpRequestor implements Requestor {
         if (response.statusCode() > OK_CODE_L && response.statusCode() < OK_CODE_H) {
             return response.body();
         } else {
-            return null;
+            throw new IOException(url + ": " + response.statusMessage());
         }
     }
 
     /**
      * query stringify the object
+     *
+     * @param map the param map
+     * @return a query string represent the map
      */
-    protected String queryStringify(Map<String, Object> map) {
+    private String queryStringify(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
             return "";
         }

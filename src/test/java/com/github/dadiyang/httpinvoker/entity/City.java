@@ -4,10 +4,7 @@ package com.github.dadiyang.httpinvoker.entity;
 import java.util.Objects;
 
 /**
- * @ClassName: City
- * @Description: 城市
- * @author: huangxuyang
- * @date: 2017年8月29日
+ * @author huangxuyang
  */
 public class City {
     private Integer id;

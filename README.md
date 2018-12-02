@@ -30,7 +30,17 @@
 
 # 使用
  
-## 一、定义接口
+## 一、添加maven依赖
+
+```xml
+ <dependency>
+    <groupId>com.github.dadiyang</groupId>
+    <artifactId>http-api-invoker</artifactId>
+    <version>1.0.1</version>
+ </dependency>
+```
+
+## 二、定义接口
  
 将请求url与接口方法绑定（支持路径参数和配置项）
  
@@ -68,7 +78,7 @@ public interface CityService {
 }
 ```
  
-## 二、获取代理类
+## 三、获取代理类
  
  你唯一需要做的就是定义上面的接口，然后在使用的时候就可以通过工厂类获取接口的代理实现类了。
  
@@ -132,7 +142,7 @@ public interface CityService {
 private CityService cityService;
 ```
 
-## 三、使用示例
+## 四、使用示例
 
 可查看项目单元测试HttpApiInvokerTest和HttpApiInvokerSpringTest两个类
 

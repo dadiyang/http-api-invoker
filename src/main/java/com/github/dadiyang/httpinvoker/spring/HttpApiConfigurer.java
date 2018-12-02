@@ -19,7 +19,7 @@ import java.util.*;
  * Scanning the base packages that {@link HttpApiScan} specified.
  *
  * @author huangxuyang
- * @date 2018/10/31
+ * date 2018/10/31
  */
 @Component
 public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, ApplicationContextAware {
