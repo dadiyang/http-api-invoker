@@ -4,7 +4,7 @@
 
 将http api和接口绑定，然后由框架生成接口的代理类，无需自己发送 http 请求，直接调用接口的方法就会自动构建请求参数并发送请求，然后处理请求响应转换为接口方法的返回值返回（**支持泛型**）。
 
-与 **Spring 集成**，更能使用 @Autowired 进行自动注入接口的代理实现。
+若与 **Spring 集成（可选）**，更能使用 @Autowired 进行自动注入接口的代理实现。
 
 # 特色
 
@@ -68,13 +68,15 @@ public interface CityService {
 }
 ```
  
-## 二、获取代理
+## 二、获取代理类
  
  你唯一需要做的就是定义上面的接口，然后在使用的时候就可以通过工厂类获取接口的代理实现类了。
  
  如果你使用Spring，那简单地配置一下就可以使用@Autowired注解直接注入你的接口实现了
  
 ### 工厂方法示例：
+ 
+ 使用 HttpApiProxyFactory.getProxy(接口.class) 获取接口代理类
  
  ```java
  Properties properties = new Properties();
@@ -83,27 +85,43 @@ public interface CityService {
  CityService service = new HttpApiProxyFactory(properties).getProxy(CityService.class);
  ```
   
-### 使用 HttpApiProxyFactory.getProxy(接口.class) 获取接口代理类
+
+### Spring 集成
+
+#### 添加两个配置
  
-#### Spring 集成
- 
- 1. 注册 HttpApiConfigurer 配置器 到Spring容器，有两种方式：可以启用包扫描@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})，也可以通过@Bean注解方法，根据个人喜好而定，效果是一样的
+ 1. 注册 HttpApiConfigurer 配置器到Spring容器，有两种方式（任选一种即可）：
+    
+    1. 启用包扫描
+    
+        `@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})`
+    
+    2. 通过@Bean注解方法
+    
+        ```java
+            @Bean
+            public HttpApiConfigurer httpApiConfigurer(){
+                return new HttpApiConfigurer();
+            }
+        ```
  2. 像@ComponentScan注解一样，在有 @Configuration 注解的类上加上 @HttpApiScan 注解开启服务接口扫描
- 
-```java
-@Configuration
-// 在包扫描中加上配置器所在的包
-@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})
-// 启动服务接口扫描，configPaths是可选的，用于填充url中使用的配置项
-@HttpApiScan(configPaths = "classpath:conf.properties")
-public class TestApplication {
-//    或者使用@Bean注解的方法生成配置器
-//    @Bean
-//    public HttpApiConfigurer httpApiConfigurer() {
-//        return new HttpApiConfigurer();
-//    }
-}
-```
+    
+    注： configPaths是可选的，用于填充url中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
+
+    ```java
+    @Configuration
+    // 在包扫描中加上配置器所在的包
+    @ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})
+    // 启动服务接口扫描，configPaths是可选的，用于填充url中使用的配置项
+    @HttpApiScan(configPaths = "classpath:conf.properties")
+    public class TestApplication {
+    //    或者使用@Bean注解的方法生成配置器
+    //    @Bean
+    //    public HttpApiConfigurer httpApiConfigurer() {
+    //        return new HttpApiConfigurer();
+    //    }
+    }
+    ```
  
 #### 使用 @Autowired 注入
 
@@ -115,6 +133,8 @@ private CityService cityService;
 ```
 
 ## 三、使用示例
+
+可查看项目单元测试HttpApiInvokerTest和HttpApiInvokerSpringTest两个类
 
 ### Spring集成使用
 
@@ -145,7 +165,6 @@ public void getProxyTest() throws Exception {
 
 # 核心注解
 
-
 ## @HttpReq
 
 标注方法对应的url
@@ -160,4 +179,6 @@ public void getProxyTest() throws Exception {
 
 ## @HttpApiScan
 
-启动包扫描，类似@ComponentScan。value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
+启动包扫描，类似@ComponentScan。
+* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
+* configPaths属性指定配置文件
