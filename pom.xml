@@ -6,11 +6,11 @@
 
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.version>4.3.5.RELEASE</spring.version>
-        <aspectj.version>1.7.4</aspectj.version>
         <fastjson.version>1.2.54</fastjson.version>
         <slf4j.version>1.7.21</slf4j.version>
         <jsoup.version>1.11.2</jsoup.version>
