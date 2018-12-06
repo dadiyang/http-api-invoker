@@ -57,7 +57,7 @@ public class DefaultHttpRequestor implements Requestor {
                         .execute();
             }
         }
-        if (response.statusCode() > OK_CODE_L && response.statusCode() < OK_CODE_H) {
+        if (response.statusCode() >= OK_CODE_L && response.statusCode() < OK_CODE_H) {
             return response.body();
         } else {
             throw new IOException(url + ": " + response.statusMessage());
