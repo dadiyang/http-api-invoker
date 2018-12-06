@@ -20,14 +20,13 @@ import java.util.Map;
  */
 public class DefaultHttpRequestor implements Requestor {
     private static final Logger log = LoggerFactory.getLogger(Requestor.class);
-    private static final int OK_CODE_L = 200;
-    private static final int OK_CODE_H = 300;
+
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public String sendRequest(String url, Map<String, Object> params, Object[] args, HttpReq anno) throws IOException {
+    public HttpResponse sendRequest(String url, Map<String, Object> params, Object[] args, HttpReq anno) throws IOException {
         // send request
         Connection.Method m = Connection.Method.valueOf(anno.method().toUpperCase());
         Connection.Response response;
@@ -57,11 +56,7 @@ public class DefaultHttpRequestor implements Requestor {
                         .execute();
             }
         }
-        if (response.statusCode() >= OK_CODE_L && response.statusCode() < OK_CODE_H) {
-            return response.body();
-        } else {
-            throw new IOException(url + ": " + response.statusMessage());
-        }
+        return new JsoupHttpResponse(response);
     }
 
     /**

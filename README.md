@@ -36,7 +36,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
  </dependency>
 ```
 
@@ -75,6 +75,12 @@ public interface CityService {
      */
     @HttpReq("/city/getCityRest/{id}")
     City getCityRest(@Param("id") int id);
+    /**
+     * 可以通过返回 byte[]或 InputStream 来下载资源
+     * @return 调用接口返回的字节数组
+     */
+    @HttpReq("/city/picture/landscape.png")
+    byte[] download();
 }
 ```
  

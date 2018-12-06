@@ -22,5 +22,5 @@ public interface Requestor {
      * @return 发送请求后的返回值
      * @throws IOException IO异常
      */
-    String sendRequest(String url, Map<String, Object> params, Object[] args, HttpReq anno) throws IOException;
+    HttpResponse sendRequest(String url, Map<String, Object> params, Object[] args, HttpReq anno) throws IOException;
 }

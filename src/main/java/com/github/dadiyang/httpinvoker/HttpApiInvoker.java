@@ -4,10 +4,13 @@ import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.HttpApi;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.annotation.Param;
+import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
@@ -30,6 +33,8 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{([^/]+?)}");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^/]+?)}");
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z].+://");
+    private static final int OK_CODE_L = 200;
+    private static final int OK_CODE_H = 300;
     private Requestor requestor;
     private Properties properties;
     private Class<?> clazz;
@@ -75,17 +80,35 @@ public class HttpApiInvoker implements InvocationHandler {
             // fill path variable for the url
             url = fillPathVariables(params, url);
         }
-        String response = requestor.sendRequest(url, params, args, anno);
-        if (Objects.equals(method.getReturnType(), Void.class)) {
-            return null;
-        }
+        HttpResponse response = requestor.sendRequest(url, params, args, anno);
         if (response == null) {
             return null;
-        } else {
-            // get generic return type
-            Type type = method.getGenericReturnType();
-            return JSON.parseObject(response, type == null ? method.getReturnType() : type);
         }
+        if (response.getStatusCode() < OK_CODE_L || response.getStatusCode() >= OK_CODE_H) {
+            // status code is not 2xx
+            throw new IOException(url + ": " + response.getStatusMessage());
+        }
+        if (Objects.equals(method.getReturnType(), Void.class)) {
+            // without return type
+            return null;
+        }
+        if (method.getReturnType() == String.class) {
+            return response.getBody();
+        }
+        if (method.getReturnType() == byte[].class) {
+            return response.getBodyAsBytes();
+        }
+        if (method.getReturnType().isAssignableFrom(BufferedInputStream.class)) {
+            return response.getBodyStream();
+        }
+        if (response.getClass() == method.getReturnType()) {
+            return response;
+        }
+        // get generic return type
+        Type type = method.getGenericReturnType();
+        type = type == null ? method.getReturnType() : type;
+        return JSON.parseObject(response.getBodyAsBytes(), type);
+
     }
 
     private Map<String, Object> parseParam(Object arg) {
