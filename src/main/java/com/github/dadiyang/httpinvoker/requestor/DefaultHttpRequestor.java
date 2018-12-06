@@ -2,6 +2,7 @@ package com.github.dadiyang.httpinvoker.requestor;
 
 import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
+import com.github.dadiyang.httpinvoker.annotation.Param;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
@@ -50,7 +51,22 @@ public class DefaultHttpRequestor implements Requestor {
                 log.debug("send {} request to {}", m, url);
                 response = conn.execute();
             } else {
-                String requestBody = JSON.toJSONString(params == null ? args[0] : params);
+                Object bodyObj = params;
+                if (params == null) {
+                    // find the first body param if exists
+                    for (Object arg : args) {
+                        if (arg.getClass().isAnnotationPresent(Param.class)) {
+                            Param param = arg.getClass().getAnnotation(Param.class);
+                            if (param.isBody()) {
+                                bodyObj = arg;
+                                break;
+                            }
+                        }
+                    }
+                }
+                // if there neither have params nor body param, use the first arg
+                bodyObj = bodyObj == null ? args[0] : bodyObj;
+                String requestBody = JSON.toJSONString(bodyObj);
                 log.debug("send {} request to {} with request body {}", m, url, requestBody);
                 response = conn.requestBody(requestBody)
                         .execute();
