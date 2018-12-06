@@ -30,7 +30,6 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{([^/]+?)}");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^/]+?)}");
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z].+://");
-    private static final String DEFAULT_PATH_SEPARATOR = "/";
     private Requestor requestor;
     private Properties properties;
     private Class<?> clazz;
@@ -71,12 +70,7 @@ public class HttpApiInvoker implements InvocationHandler {
                 params = annotatedParam;
             } else {
                 // else use the first arg as param
-                if (args[0] instanceof Collection || args[0] instanceof Array) {
-                    // we don't handle collection param here
-                    params = null;
-                } else {
-                    params = JSON.parseObject(JSON.toJSONString(args[0]));
-                }
+                params = parseParam(args[0]);
             }
             // fill path variable for the url
             url = fillPathVariables(params, url);
@@ -92,6 +86,17 @@ public class HttpApiInvoker implements InvocationHandler {
             Type type = method.getGenericReturnType();
             return JSON.parseObject(response, type == null ? method.getReturnType() : type);
         }
+    }
+
+    private Map<String, Object> parseParam(Object arg) {
+        Map<String, Object> params;
+        if (arg instanceof Collection || arg instanceof Array) {
+            // we don't handle collection param here
+            params = null;
+        } else {
+            params = JSON.parseObject(JSON.toJSONString(arg));
+        }
+        return params;
     }
 
 
@@ -116,11 +121,20 @@ public class HttpApiInvoker implements InvocationHandler {
             for (Annotation ann : annotation) {
                 if (ann instanceof Param) {
                     Param param = (Param) ann;
-                    String key = param.value();
                     if (map == null) {
                         map = new HashMap<>();
                     }
-                    map.put(key, args[i]);
+                    if (param.isBody()) {
+                        Map<String, Object> body = parseParam(args[i]);
+                        if (body != null) {
+                            map.putAll(body);
+                        }
+                    }
+                    String key = param.value();
+                    if (!key.isEmpty()) {
+                        map.put(key, args[i]);
+                    }
+                    // ignore when the param annotation's value is empty and isBody is false
                 }
             }
         }
@@ -134,22 +148,19 @@ public class HttpApiInvoker implements InvocationHandler {
      * @throws IllegalArgumentException thrown when the specific param absent
      */
     private String fillPathVariables(Map<String, Object> params, String url) {
-        String[] path = url.split(DEFAULT_PATH_SEPARATOR);
-        for (int i = 0; i < path.length; i++) {
-            String s = path[i];
-            Matcher matcher = PATH_VARIABLE_PATTERN.matcher(s);
-            if (matcher.find()) {
-                String key = matcher.group(1);
-                if (params == null || !params.containsKey(key)) {
-                    // path variable must be provided
-                    String msg = "the url [" + url + "] needs a path variable: [" + key + "], but wasn't provided.";
-                    log.warn(msg);
-                    throw new IllegalArgumentException(msg);
-                }
-                path[i] = params.remove(key).toString();
+        Matcher matcher = PATH_VARIABLE_PATTERN.matcher(url);
+        if (matcher.find()) {
+            String key = matcher.group(1);
+            if (!params.containsKey(key)) {
+                // path variable must be provided
+                String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
+                log.warn(msg);
+                throw new IllegalArgumentException(msg);
             }
+            String prop = params.remove(key).toString();
+            url = url.replace("{" + key + "}", prop);
         }
-        return String.join(DEFAULT_PATH_SEPARATOR, path);
+        return url;
     }
 
     private String fillConfigVariables(String url) {
@@ -167,4 +178,5 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         return url;
     }
+
 }

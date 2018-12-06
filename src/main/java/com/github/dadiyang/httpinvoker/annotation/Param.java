@@ -4,6 +4,8 @@ import java.lang.annotation.*;
 
 /**
  * The {@link #value} stand for the key of request param and the annotated parameter represents the according value
+ * <p>
+ * value and isBody should not both be empty/false, otherwise the param will be ignored
  *
  * @author huangxuyang
  * date 2018/10/31
@@ -13,7 +15,16 @@ import java.lang.annotation.*;
 @Documented
 public @interface Param {
     /**
+     * value and isBody should not both be empty/false
+     *
      * @return key of request param
      */
-    String value();
+    String value() default "";
+
+    /**
+     * mark that the argument is the request body
+     *
+     * @return if the argument is the request body
+     */
+    boolean isBody() default false;
 }
