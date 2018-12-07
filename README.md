@@ -36,7 +36,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
  </dependency>
 ```
 
@@ -81,6 +81,20 @@ public interface CityService {
      */
     @HttpReq("/city/picture/landscape.png")
     byte[] download();
+    /**
+     * 上传输入流
+     * @param fileName 文件名
+     * @param in 输入流
+     */
+    @HttpReq(value="/city/picture/upload", method = "POST")
+    void upload(@Param("fileName") String fileName,
+                     @Param(value = "media", isBody = true) InputStream in);
+    /**
+     * 上传文件
+     * @param file 文件
+     */
+    @HttpReq(value="/city/picture/upload", method = "POST")
+    void upload(@Param(value = "media", isBody = true) File file);
 }
 ```
  
