@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.HttpApi;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.annotation.Param;
+import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.slf4j.Logger;
@@ -68,19 +69,24 @@ public class HttpApiInvoker implements InvocationHandler {
         url = fillConfigVariables(url);
         // prepare param
         Map<String, Object> params = null;
+        HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
         if (args != null && args.length > 0) {
-            Map<String, Object> annotatedParam = parseAnnotatedParams(args, method);
+            Map<String, Object> annotatedParam = parseAnnotatedParams(args, method, request);
             // use annotated param if exists
-            if (!annotatedParam.isEmpty()) {
+            if (annotatedParam != null && !annotatedParam.isEmpty()) {
                 params = annotatedParam;
-            } else {
+            } else if (request.getBody() == null) {
                 // else use the first arg as param
-                params = parseParam(args[0]);
+                request.setBody(args[0]);
+            } else {
+                request.setData(parseParam(request.getBody()));
             }
             // fill path variable for the url
             url = fillPathVariables(params, url);
         }
-        HttpResponse response = requestor.sendRequest(url, params, args, anno);
+        request.setUrl(url);
+        request.setData(params);
+        HttpResponse response = requestor.sendRequest(request);
         if (response == null) {
             return null;
         }
@@ -113,7 +119,9 @@ public class HttpApiInvoker implements InvocationHandler {
 
     private Map<String, Object> parseParam(Object arg) {
         Map<String, Object> params;
-        if (arg instanceof Collection || arg instanceof Array) {
+        if (arg instanceof Collection
+                || arg instanceof Array
+                || arg.getClass().isArray()) {
             // we don't handle collection param here
             params = null;
         } else {
@@ -122,18 +130,18 @@ public class HttpApiInvoker implements InvocationHandler {
         return params;
     }
 
-
     /**
      * parse arguments annotated by @Param annotation to a map
      * <p>
      * the annotation's value stand for key and the argument represent value
      * <p>
      *
-     * @param args   the arguments
-     * @param method the method invoked
+     * @param args    the arguments
+     * @param method  the method invoked
+     * @param request
      * @return the map represent the params
      */
-    private Map<String, Object> parseAnnotatedParams(Object[] args, Method method) {
+    private Map<String, Object> parseAnnotatedParams(Object[] args, Method method, HttpRequest request) {
         Annotation[][] annotations = method.getParameterAnnotations();
         if (annotations.length <= 0) {
             return Collections.emptyMap();
@@ -148,20 +156,19 @@ public class HttpApiInvoker implements InvocationHandler {
                         map = new HashMap<>();
                     }
                     if (param.isBody()) {
-                        Map<String, Object> body = parseParam(args[i]);
-                        if (body != null) {
-                            map.putAll(body);
+                        request.setBody(args[i]);
+                        request.setFileFormKey(param.value());
+                    } else {
+                        String key = param.value();
+                        if (!key.isEmpty()) {
+                            map.put(key, args[i]);
                         }
-                    }
-                    String key = param.value();
-                    if (!key.isEmpty()) {
-                        map.put(key, args[i]);
                     }
                     // ignore when the param annotation's value is empty and isBody is false
                 }
             }
         }
-        return map == null ? Collections.emptyMap() : map;
+        return map;
     }
 
     /**
@@ -172,9 +179,9 @@ public class HttpApiInvoker implements InvocationHandler {
      */
     private String fillPathVariables(Map<String, Object> params, String url) {
         Matcher matcher = PATH_VARIABLE_PATTERN.matcher(url);
-        if (matcher.find()) {
+        while (matcher.find()) {
             String key = matcher.group(1);
-            if (!params.containsKey(key)) {
+            if (params == null || !params.containsKey(key)) {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
                 log.warn(msg);
@@ -188,7 +195,7 @@ public class HttpApiInvoker implements InvocationHandler {
 
     private String fillConfigVariables(String url) {
         Matcher matcher = VARIABLE_PATTERN.matcher(url);
-        if (matcher.find()) {
+        while (matcher.find()) {
             String key = matcher.group(1);
             if (!properties.containsKey(key)) {
                 // path variable must be provided

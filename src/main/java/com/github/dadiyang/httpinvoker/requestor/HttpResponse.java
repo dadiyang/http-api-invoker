@@ -1,6 +1,10 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
 import java.io.BufferedInputStream;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author huangxuyang
@@ -12,41 +16,41 @@ public class HttpResponse {
      *
      * @return status code
      */
-    int statusCode;
+    private int statusCode;
 
     /**
      * Get the status message of the response.
      *
      * @return status message
      */
-    String statusMessage;
+    private String statusMessage;
 
     /**
      * Get the character set name of the response, derived from the content-type header.
      *
      * @return character set name
      */
-    String charset;
+    private String charset;
 
     /**
      * Get the response content type (e.g. "text/html");
      *
      * @return the response content type
      */
-    String contentType;
+    private String contentType;
 
     /**
      * Get the body of the response as an array of bytes.
      *
      * @return body bytes
      */
-    byte[] bodyAsBytes;
+    private byte[] bodyAsBytes;
     /**
      * Get the body of the response as a plain string.
      *
      * @return body
      */
-    String body;
+    private String body;
     /**
      * Get the body of the response as a (buffered) InputStream. You should close the input stream when you're done with it.
      * Other body methods (like bufferUp, body, parse, etc) will not work in conjunction with this method.
@@ -54,7 +58,16 @@ public class HttpResponse {
      *
      * @return the response body input stream
      */
-    BufferedInputStream bodyStream;
+    private BufferedInputStream bodyStream;
+
+    private Map<String, List<String>> headers;
+
+    /**
+     * Retrieve all of the request/response cookies as a map
+     *
+     * @return cookies
+     */
+    private Map<String, String> cookies;
 
     public HttpResponse() {
     }
@@ -119,5 +132,45 @@ public class HttpResponse {
 
     public void setBody(String body) {
         this.body = body;
+    }
+
+    public Map<String, String> getHeaders() {
+        LinkedHashMap<String, String> map = new LinkedHashMap<>(headers.size());
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+            String header = entry.getKey();
+            List<String> values = entry.getValue();
+            if (values.size() > 0) {
+                map.put(header, values.get(0));
+            }
+        }
+        return map;
+    }
+
+    public void setHeaders(Map<String, List<String>> headers) {
+        this.headers = headers;
+    }
+
+    public Map<String, List<String>> multiHeaders() {
+        return headers;
+    }
+
+    public List<String> getHeaders(String name) {
+        return Arrays.asList(getHeader(name).split(";\\s?"));
+    }
+
+    public String getHeader(String name) {
+        return getHeaders().get(name);
+    }
+
+    public Map<String, String> getCookies() {
+        return cookies;
+    }
+
+    public void setCookies(Map<String, String> cookies) {
+        this.cookies = cookies;
+    }
+
+    public String getCookie(String name) {
+        return getCookies().get(name);
     }
 }

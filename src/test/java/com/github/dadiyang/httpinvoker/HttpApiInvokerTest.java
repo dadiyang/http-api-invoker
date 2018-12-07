@@ -5,6 +5,7 @@ import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.interfaces.CityService;
+import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.junit.Before;
@@ -44,7 +45,10 @@ public class HttpApiInvokerTest {
         HttpReq httpReq = CityService.class.getMethod("saveCities", List.class).getAnnotation(HttpReq.class);
         String url = host + httpReq.value();
         List<City> citiesToSave = Arrays.asList(new City(22, "南京"), new City(23, "武汉"));
-        when(requestor.sendRequest(url, null, new Object[]{citiesToSave}, httpReq)).thenReturn(createResponse("true"));
+        HttpRequest request = new HttpRequest(url);
+        request.setMethod("POST");
+        request.setBody(citiesToSave);
+        when(requestor.sendRequest(request)).thenReturn(createResponse("true"));
         assertTrue(service.saveCities(citiesToSave));
         System.out.println("————————————测试批量保存城市通过（集合类或数组的参数数）————————————");
     }
@@ -59,7 +63,8 @@ public class HttpApiInvokerTest {
         cityList.add(new City(4, "深圳"));
         HttpReq httpReq = CityService.class.getMethod("getAllCities").getAnnotation(HttpReq.class);
         String url = host + httpReq.value();
-        when(requestor.sendRequest(url, null, null, httpReq)).thenReturn(createResponse(JSON.toJSONString(cityList)));
+        HttpRequest request = new HttpRequest(url);
+        when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(cityList)));
         List<City> cities = service.getAllCities();
         assertTrue(cityList.containsAll(cities));
         assertTrue(cities.containsAll(cityList));
@@ -78,7 +83,10 @@ public class HttpApiInvokerTest {
         Map<String, Object> param = new HashMap<>();
         param.put("id", 31);
         param.put("name", "东莞");
-        when(requestor.sendRequest(url, param, new Object[]{31, "东莞"}, httpReq)).thenReturn(createResponse("true"));
+        HttpRequest request = new HttpRequest(url);
+        request.setMethod("POST");
+        request.setData(param);
+        when(requestor.sendRequest(request)).thenReturn(createResponse("true"));
         assertTrue(service.saveCity(31, "东莞"));
         System.out.println("————————————测试保存单个城市通过（通过method指定POST）————————————");
     }
@@ -91,7 +99,9 @@ public class HttpApiInvokerTest {
         City city = new City(31, "东莞");
         Map<String, Object> param = new HashMap<>();
         param.put("id", 31);
-        when(requestor.sendRequest(url, param, new Object[]{31}, httpReq)).thenReturn(createResponse(JSON.toJSONString(city)));
+        HttpRequest request = new HttpRequest(url);
+        request.setData(param);
+        when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(city)));
         assertEquals(service.getCity(31), city);
         System.out.println("————————————测试保存单个城市通过（使用Param注解指定方法参数）————————————");
     }
@@ -105,7 +115,9 @@ public class HttpApiInvokerTest {
         ResultBean<City> expectedResult = new ResultBean<>(0, new City(1, name));
         Map<String, Object> param = new HashMap<>();
         param.put("name", "北京");
-        when(requestor.sendRequest(url, param, new Object[]{"北京"}, httpReq)).thenReturn(createResponse(JSON.toJSONString(expectedResult)));
+        HttpRequest request = new HttpRequest(url);
+        request.setData(param);
+        when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(expectedResult)));
         ResultBean<City> invokedResult = service.getCityByName(name);
         assertEquals(expectedResult, invokedResult);
         City city = expectedResult.getData();
@@ -121,7 +133,9 @@ public class HttpApiInvokerTest {
         String url = host + "/city/getCityRest/" + id;
         City city = new City(id, "北京");
         Map<String, Object> param = new HashMap<>();
-        when(requestor.sendRequest(url, param, new Object[]{id}, httpReq)).thenReturn(createResponse(JSON.toJSONString(city)));
+        HttpRequest request = new HttpRequest(url);
+        request.setData(param);
+        when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(city)));
         assertEquals(city, service.getCityRest(id));
         System.out.println("————————————测试带有路径参数的方法通过————————————");
     }

@@ -36,4 +36,5 @@ public @interface HttpReq {
      * @return request timeout
      */
     int timeout() default 30_000;
+
 }
