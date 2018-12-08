@@ -181,7 +181,9 @@ public class HttpApiInvoker implements InvocationHandler {
         Matcher matcher = PATH_VARIABLE_PATTERN.matcher(url);
         while (matcher.find()) {
             String key = matcher.group(1);
-            if (params == null || !params.containsKey(key)) {
+            if (params == null
+                    || !params.containsKey(key)
+                    || params.get(key) == null) {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
                 log.warn(msg);
