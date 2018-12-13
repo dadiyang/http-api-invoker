@@ -107,7 +107,7 @@ public class HttpApiInvoker implements InvocationHandler {
         if (method.getReturnType().isAssignableFrom(BufferedInputStream.class)) {
             return response.getBodyStream();
         }
-        if (response.getClass() == method.getReturnType()) {
+        if (method.getReturnType().isAssignableFrom(HttpResponse.class)) {
             return response;
         }
         // get generic return type
