@@ -74,7 +74,6 @@ public class HttpApiInvokerTest {
     }
 
 
-
     @Test
     public void saveCityTest() throws Exception {
         System.out.println("————————————开始测试保存单个城市（通过method指定POST）————————————");
@@ -109,8 +108,7 @@ public class HttpApiInvokerTest {
     @Test
     public void getCityByNameTest() throws Exception {
         System.out.println("————————————开始测试根据城市名查询城市（使用完整的路径）————————————");
-        HttpReq httpReq = CityService.class.getMethod("getCityByName", String.class).getAnnotation(HttpReq.class);
-        String url = httpReq.value();
+        String url = host + "/city/getCityByName";
         String name = "北京";
         ResultBean<City> expectedResult = new ResultBean<>(0, new City(1, name));
         Map<String, Object> param = new HashMap<>();
