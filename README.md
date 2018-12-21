@@ -36,13 +36,15 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
  </dependency>
 ```
 
 ## 二、定义接口
  
-将请求url与接口方法绑定（支持路径参数和配置项）
+将请求url与接口方法绑定（支持路径参数，例如 `{cityName}` 和 配置项，例如 `${api.url.city}`）
+
+注：路径参数占位符 `{}` 和配置项占位符 `${}`
  
 示例：
 
@@ -95,6 +97,16 @@ public interface CityService {
      */
     @HttpReq(value="/city/picture/upload", method = "POST")
     void upload(@Param(value = "media", isBody = true) File file);
+    /**
+     * 带正确请求头的方法
+     */
+    @HttpReq("/city/getCityRest/{id}")
+    City getCityWithHeaders(@Param("id") int id, @Headers Map<String, String> headers);
+    /**
+     * 带cookie的方法
+     */
+    @HttpReq("/city/getCityRest/{id}")
+    City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
 }
 ```
  
@@ -114,7 +126,6 @@ public interface CityService {
  // properties 是可选的，若不提供则默认使用 System.getProperties() 提供的配置
  CityService service = new HttpApiProxyFactory(properties).getProxy(CityService.class);
  ```
-  
 
 ### Spring 集成
 
@@ -195,6 +206,16 @@ public void getProxyTest() throws Exception {
 
 # 核心注解
 
+## @HttpApiScan
+
+启动包扫描，类似@ComponentScan。
+* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
+* configPaths属性指定配置文件
+
+## @HttpApi
+
+标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
+
 ## @HttpReq
 
 标注方法对应的url
@@ -203,12 +224,12 @@ public void getProxyTest() throws Exception {
 
 指定方法参数名对应的请求参数名称
 
-## @HttpApi
+## @Headers
 
-标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
+指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
 
-## @HttpApiScan
+## @Cookies
 
-启动包扫描，类似@ComponentScan。
-* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
-* configPaths属性指定配置文件
+指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+

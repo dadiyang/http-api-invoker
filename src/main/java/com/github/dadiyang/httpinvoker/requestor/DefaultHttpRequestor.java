@@ -27,8 +27,8 @@ import static org.jsoup.Connection.Response;
 public class DefaultHttpRequestor implements Requestor {
     private static final Logger log = LoggerFactory.getLogger(Requestor.class);
     private static final String FILE_NAME = "fileName";
-    public static final String DEFAULT_UPLOAD_FORM_KEY = "media";
-    public static final String FORM_KEY = "formKey";
+    private static final String DEFAULT_UPLOAD_FORM_KEY = "media";
+    private static final String FORM_KEY = "formKey";
 
 
     /**
@@ -45,18 +45,20 @@ public class DefaultHttpRequestor implements Requestor {
             // to those method without body such as GET/DELETE we use QueryString
             String fullUrl = request.getUrl() + queryStringify(request.getData());
             log.debug("send {} request to {}", m, fullUrl);
-            response = Jsoup.connect(fullUrl)
+            Connection conn = Jsoup.connect(fullUrl)
                     .method(m)
                     .timeout(timeout)
                     .header("Content-Type", "application/json; charset=utf-8")
-                    .ignoreContentType(true)
-                    .execute();
+                    .ignoreContentType(true);
+            addHeadersAndCookies(request, conn);
+            response = conn.execute();
         } else {
             Connection conn = Jsoup.connect(url)
                     .method(m)
                     .timeout(timeout)
                     .header("Content-Type", "application/json; charset=utf-8")
                     .ignoreContentType(true);
+            addHeadersAndCookies(request, conn);
             Map<String, Object> data = request.getData();
             // body first
             if (request.getBody() != null) {
@@ -86,6 +88,15 @@ public class DefaultHttpRequestor implements Requestor {
         return new JsoupHttpResponse(response);
     }
 
+    private void addHeadersAndCookies(HttpRequest request, Connection conn) {
+        if (request.getHeaders() != null) {
+            conn.headers(request.getHeaders());
+        }
+        if (request.getCookies() != null) {
+            conn.cookies(request.getCookies());
+        }
+    }
+
     private boolean isUploadRequest(HttpRequest request, Object bodyParam) {
         return bodyParam != null && (InputStream.class.isAssignableFrom(bodyParam.getClass())
                 || File.class.isAssignableFrom(request.getBody().getClass()));
@@ -111,11 +122,12 @@ public class DefaultHttpRequestor implements Requestor {
                 }
             }
         }
-        Connection connection = Jsoup.connect(request.getUrl());
-        connection.method(Method.POST)
+        Connection conn = Jsoup.connect(request.getUrl());
+        conn.method(Method.POST)
                 .timeout(request.getTimeout())
                 .ignoreHttpErrors(true)
                 .ignoreContentType(true);
+        addHeadersAndCookies(request, conn);
         String fileName = "fileName";
         InputStream in;
         if (File.class.isAssignableFrom(request.getBody().getClass())) {
@@ -126,13 +138,13 @@ public class DefaultHttpRequestor implements Requestor {
             in = (InputStream) request.getBody();
         }
         if (!params.isEmpty()) {
-            connection.data(params);
+            conn.data(params);
             if (params.containsKey(FILE_NAME)) {
                 fileName = params.get(FILE_NAME);
             }
         }
-        connection.data(formKey, fileName, in);
-        return connection.execute();
+        conn.data(formKey, fileName, in);
+        return conn.execute();
     }
 
     /**

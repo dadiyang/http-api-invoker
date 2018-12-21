@@ -15,7 +15,7 @@ public class DefaultHttpRequestorTest {
     private DefaultHttpRequestor defaultHttpRequestor;
     private static final int PORT = 18888;
     @Rule
-    public WireMockRule cityIoService = new WireMockRule(options().port(18888));
+    public WireMockRule cityIoService = new WireMockRule(options().port(PORT));
 
     @Before
     public void setUp() throws Exception {

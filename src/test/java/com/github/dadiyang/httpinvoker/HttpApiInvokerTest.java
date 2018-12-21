@@ -13,8 +13,10 @@ import org.junit.Test;
 
 import java.util.*;
 
+import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,11 +58,7 @@ public class HttpApiInvokerTest {
     @Test
     public void getAllCitiesTest() throws Exception {
         System.out.println("————————————开始测试获取全部城市（使用URI）————————————");
-        List<City> cityList = new ArrayList<>();
-        cityList.add(new City(1, "北京"));
-        cityList.add(new City(2, "上海"));
-        cityList.add(new City(3, "广州"));
-        cityList.add(new City(4, "深圳"));
+        List<City> cityList = createCities();
         HttpReq httpReq = CityService.class.getMethod("getAllCities").getAnnotation(HttpReq.class);
         String url = host + httpReq.value();
         HttpRequest request = new HttpRequest(url);
@@ -74,6 +72,8 @@ public class HttpApiInvokerTest {
         }
         System.out.println("————————————测试获取全部城市通过（使用URI）————————————");
     }
+
+
 
     @Test
     public void saveCityTest() throws Exception {
@@ -138,6 +138,22 @@ public class HttpApiInvokerTest {
         when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(city)));
         assertEquals(city, service.getCityRest(id));
         System.out.println("————————————测试带有路径参数的方法通过————————————");
+    }
+
+    @Test
+    public void getCityWithHeadersTest() {
+        Map<String, String> map = new HashMap<>();
+        map.put("auth", "OK");
+        service.getCityWithHeaders(1, map);
+    }
+
+    @Test
+    public void getCityWithErrHeadersTest() {
+        try {
+            service.getCityWithErrHeaders(1, "");
+            fail("this method must throw an IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+        }
     }
 
     public void setRequestor(Requestor requestor) {

@@ -1,13 +1,12 @@
 package com.github.dadiyang.httpinvoker.interfaces;
 
 
-import com.github.dadiyang.httpinvoker.annotation.HttpApi;
-import com.github.dadiyang.httpinvoker.annotation.HttpReq;
-import com.github.dadiyang.httpinvoker.annotation.Param;
+import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * a example interface for testing
@@ -44,7 +43,7 @@ public interface CityService {
     /**
      * 使用完整的路径，不会添加前缀
      */
-    @HttpReq(value = "http://localhost:8080/city/getCityByName")
+    @HttpReq(value = "${api.url.city.host}/city/getCityByName")
     ResultBean<City> getCityByName(@Param("name") String name);
 
     /**
@@ -52,4 +51,23 @@ public interface CityService {
      */
     @HttpReq("/city/getCityRest/{id}")
     City getCityRest(@Param("id") int id);
+
+    /**
+     * 带错误请求头的方法
+     */
+    @HttpReq("/city/getCityRest/{id}")
+    City getCityWithErrHeaders(@Param("id") int id, @Headers String headers);
+
+    /**
+     * 带正确请求头的方法
+     */
+    @HttpReq("/city/getCityRest/{id}")
+    City getCityWithHeaders(@Param("id") int id, @Headers Map<String, String> headers);
+
+    /**
+     * 带cookie的方法
+     */
+    @HttpReq("/city/getCityRest/{id}")
+    City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
+
 }

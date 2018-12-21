@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
@@ -40,8 +43,6 @@ public class HttpApiInvokerSpringTest {
 
         test.saveCitiesTest();
         test.saveCityTest();
-
-
     }
 
 

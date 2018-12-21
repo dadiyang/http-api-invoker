@@ -1,9 +1,7 @@
 package com.github.dadiyang.httpinvoker;
 
 import com.alibaba.fastjson.JSON;
-import com.github.dadiyang.httpinvoker.annotation.HttpApi;
-import com.github.dadiyang.httpinvoker.annotation.HttpReq;
-import com.github.dadiyang.httpinvoker.annotation.Param;
+import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
@@ -13,10 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,15 +53,20 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         String url = "";
         HttpReq anno = method.getAnnotation(HttpReq.class);
+        url += anno.value();
+        // fill config variables
+        url = fillConfigVariables(url);
+
         // if the interface was annotated by @HttpApi and the url has no protocol
         if (clazz.isAnnotationPresent(HttpApi.class)
-                && !PROTOCOL_PATTERN.matcher(anno.value()).find()) {
+                && !PROTOCOL_PATTERN.matcher(url).find()) {
             HttpApi httpApi = clazz.getAnnotation(HttpApi.class);
-            url += httpApi.prefix();
+            url = httpApi.prefix() + url;
         }
-        url += anno.value();
-        // fill all config variables
+
+        // fill config variables again
         url = fillConfigVariables(url);
+
         // prepare param
         Map<String, Object> params = null;
         HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
@@ -166,9 +166,27 @@ public class HttpApiInvoker implements InvocationHandler {
                     }
                     // ignore when the param annotation's value is empty and isBody is false
                 }
+                if (ann instanceof Headers) {
+                    isMapStringString(method.getGenericParameterTypes()[i]);
+                    request.setHeaders((Map<String, String>) args[i]);
+                }
+                if (ann instanceof Cookies) {
+                    isMapStringString(method.getGenericParameterTypes()[i]);
+                    request.setCookies((Map<String, String>) args[i]);
+                }
             }
         }
         return map;
+    }
+
+    private void isMapStringString(Type arg) {
+        if (!(arg instanceof ParameterizedType) || ((ParameterizedType) arg).getRawType() != Map.class) {
+            throw new IllegalArgumentException("Headers annotation should only be annotated on parameter of Map<String, String&> type.");
+        }
+        Type[] types = ((ParameterizedType) arg).getActualTypeArguments();
+        if (types[0] != String.class || types[1] != String.class) {
+            throw new IllegalArgumentException("Headers annotation should only be annotated on parameter of Map<String, String&> type.");
+        }
     }
 
     /**
