@@ -1,4 +1,4 @@
-# http接口调用器
+# http接口调用框架
 
 **让http接口调用跟调用本地方法一样自然优雅**
 
@@ -49,23 +49,23 @@
 示例：
 
 ```java
-@HttpApi(prefix="${api.url.city}")
+@HttpApi(prefix="${api.url.city}/city")
 public interface CityService {
     /**
      * 使用URI，会自动添加prefix指定的前缀
      */
-    @HttpReq("/city/allCities")
+    @HttpReq("/allCities")
     List<City> getAllCities();
     /**
     * 使用Param注解指定方法参数对应的请求参数名称
     */
-    @HttpReq("/city/getById")
+    @HttpReq("/getById")
     City getCity(@Param("id") int id);
     /**
     * 默认使用GET方法，可以通过method指定请求方式
     * 如果是集合类或数组的参数数据会直接当成请求体直接发送
     */
-    @HttpReq(value = "/city/save", method = "POST")
+    @HttpReq(value = "/save", method = "POST")
     boolean saveCities(List<City> cities);
     /**
     * 使用完整的路径，不会添加前缀
@@ -75,37 +75,37 @@ public interface CityService {
     /**
      * 支持路径参数
      */
-    @HttpReq("/city/getCityRest/{id}")
+    @HttpReq("/getCityRest/{id}")
     City getCityRest(@Param("id") int id);
     /**
      * 可以通过返回 byte[]或 InputStream 来下载资源
      * @return 调用接口返回的字节数组
      */
-    @HttpReq("/city/picture/landscape.png")
+    @HttpReq("/picture/landscape.png")
     byte[] download();
     /**
      * 上传输入流
      * @param fileName 文件名
      * @param in 输入流
      */
-    @HttpReq(value="/city/picture/upload", method = "POST")
+    @HttpReq(value="/picture/upload", method = "POST")
     void upload(@Param("fileName") String fileName,
                      @Param(value = "media", isBody = true) InputStream in);
     /**
      * 上传文件
      * @param file 文件
      */
-    @HttpReq(value="/city/picture/upload", method = "POST")
+    @HttpReq(value="/picture/upload", method = "POST")
     void upload(@Param(value = "media", isBody = true) File file);
     /**
      * 带正确请求头的方法
      */
-    @HttpReq("/city/getCityRest/{id}")
+    @HttpReq("/getCityRest/{id}")
     City getCityWithHeaders(@Param("id") int id, @Headers Map<String, String> headers);
     /**
      * 带cookie的方法
      */
-    @HttpReq("/city/getCityRest/{id}")
+    @HttpReq("/getCityRest/{id}")
     City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
 }
 ```

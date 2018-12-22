@@ -2,7 +2,6 @@ package com.github.dadiyang.httpinvoker.interfaces;
 
 import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
-import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
@@ -37,9 +36,9 @@ public class CityServiceTest {
 
     @Test
     public void getAllCities() throws NoSuchMethodException {
-        HttpReq anno = CityService.class.getMethod("getAllCities").getAnnotation(HttpReq.class);
         List<City> mockCities = createCities();
-        wireMockRule.stubFor(get(urlEqualTo(anno.value())).willReturn(aResponse().withBody(JSON.toJSONString(mockCities))));
+        String uri = "/city/allCities";
+        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(mockCities))));
         List<City> cityList = cityService.getAllCities();
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));

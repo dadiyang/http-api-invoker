@@ -1,7 +1,6 @@
 package com.github.dadiyang.httpinvoker;
 
 import com.alibaba.fastjson.JSON;
-import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.interfaces.CityService;
@@ -14,9 +13,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -44,8 +41,7 @@ public class HttpApiInvokerTest {
     @Test
     public void saveCitiesTest() throws Exception {
         System.out.println("————————————开始测试批量保存城市（集合类或数组的参数数）————————————");
-        HttpReq httpReq = CityService.class.getMethod("saveCities", List.class).getAnnotation(HttpReq.class);
-        String url = host + httpReq.value();
+        String url = host + "/city/save";
         List<City> citiesToSave = Arrays.asList(new City(22, "南京"), new City(23, "武汉"));
         HttpRequest request = new HttpRequest(url);
         request.setMethod("POST");
@@ -59,8 +55,7 @@ public class HttpApiInvokerTest {
     public void getAllCitiesTest() throws Exception {
         System.out.println("————————————开始测试获取全部城市（使用URI）————————————");
         List<City> cityList = createCities();
-        HttpReq httpReq = CityService.class.getMethod("getAllCities").getAnnotation(HttpReq.class);
-        String url = host + httpReq.value();
+        String url = host + "/city/allCities";
         HttpRequest request = new HttpRequest(url);
         when(requestor.sendRequest(request)).thenReturn(createResponse(JSON.toJSONString(cityList)));
         List<City> cities = service.getAllCities();
@@ -77,8 +72,7 @@ public class HttpApiInvokerTest {
     @Test
     public void saveCityTest() throws Exception {
         System.out.println("————————————开始测试保存单个城市（通过method指定POST）————————————");
-        HttpReq httpReq = CityService.class.getMethod("saveCity", Integer.class, String.class).getAnnotation(HttpReq.class);
-        String url = host + httpReq.value();
+        String url = host + "/city/saveCity";
         Map<String, Object> param = new HashMap<>();
         param.put("id", 31);
         param.put("name", "东莞");
@@ -93,8 +87,7 @@ public class HttpApiInvokerTest {
     @Test
     public void getCityTest() throws Exception {
         System.out.println("————————————开始测试获取单个城市（使用Param注解指定方法参数）————————————");
-        HttpReq httpReq = CityService.class.getMethod("getCity", int.class).getAnnotation(HttpReq.class);
-        String url = host + httpReq.value();
+        String url = host + "/city/getById";
         City city = new City(31, "东莞");
         Map<String, Object> param = new HashMap<>();
         param.put("id", 31);
@@ -126,7 +119,6 @@ public class HttpApiInvokerTest {
     @Test
     public void getCityRest() throws Exception {
         System.out.println("————————————开始测试带有路径参数的方法————————————");
-        HttpReq httpReq = CityService.class.getMethod("getCityRest", int.class).getAnnotation(HttpReq.class);
         int id = 1;
         String url = host + "/city/getCityRest/" + id;
         City city = new City(id, "北京");
