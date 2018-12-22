@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
+import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -145,5 +146,22 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
         City result = cityService.getCityWithCookies(id, cookies);
         assertEquals(mockCity, result);
+    }
+
+    @Test
+    public void listCity() {
+        List<City> mockCities = createCities();
+        String uri = "/city/listCity";
+        String headerKey = "header1";
+        String headerValue = "value11";
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(okJson(JSON.toJSONString(mockCities)).withHeader(headerKey, headerValue)));
+        HttpResponse response = cityService.listCity();
+        System.out.println("获取到headers:" + response.getHeaders());
+        assertEquals(headerValue, response.getHeader(headerKey));
+        assertEquals("application/json", response.getHeader("Content-Type"));
+        List<City> cityList = JSON.parseArray(response.getBody(), City.class);
+        assertTrue(mockCities.containsAll(cityList));
+        assertTrue(cityList.containsAll(mockCities));
     }
 }

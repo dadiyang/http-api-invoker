@@ -4,6 +4,7 @@ package com.github.dadiyang.httpinvoker.interfaces;
 import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
+import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,12 @@ public interface CityService {
     City getCityRest(@Param("id") int id);
 
     /**
+     * 获取请求体，可以拿到请求头和cookie等信息
+     */
+    @HttpReq("/listCity")
+    HttpResponse listCity();
+
+    /**
      * 带错误请求头的方法
      */
     @HttpReq("/getCityRest/{id}")
@@ -69,5 +76,6 @@ public interface CityService {
      */
     @HttpReq("/getCityRest/{id}")
     City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
+
 
 }

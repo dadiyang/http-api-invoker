@@ -92,7 +92,7 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         if (response.getStatusCode() < OK_CODE_L || response.getStatusCode() >= OK_CODE_H) {
             // status code is not 2xx
-            throw new IOException(url + ": " + response.getStatusMessage());
+            throw new IOException(url + ", statusCode: " + response.getStatusCode() + ", statusMsg: " + response.getStatusMessage());
         }
         if (Objects.equals(method.getReturnType(), Void.class)) {
             // without return type
@@ -107,14 +107,13 @@ public class HttpApiInvoker implements InvocationHandler {
         if (method.getReturnType().isAssignableFrom(BufferedInputStream.class)) {
             return response.getBodyStream();
         }
-        if (method.getReturnType().isAssignableFrom(HttpResponse.class)) {
+        if (method.getReturnType().isAssignableFrom(response.getClass())) {
             return response;
         }
         // get generic return type
         Type type = method.getGenericReturnType();
         type = type == null ? method.getReturnType() : type;
         return JSON.parseObject(response.getBodyAsBytes(), type);
-
     }
 
     private Map<String, Object> parseParam(Object arg) {
@@ -167,11 +166,11 @@ public class HttpApiInvoker implements InvocationHandler {
                     // ignore when the param annotation's value is empty and isBody is false
                 }
                 if (ann instanceof Headers) {
-                    isMapStringString(method.getGenericParameterTypes()[i]);
+                    mustBeMapStringString(method.getGenericParameterTypes()[i]);
                     request.setHeaders((Map<String, String>) args[i]);
                 }
                 if (ann instanceof Cookies) {
-                    isMapStringString(method.getGenericParameterTypes()[i]);
+                    mustBeMapStringString(method.getGenericParameterTypes()[i]);
                     request.setCookies((Map<String, String>) args[i]);
                 }
             }
@@ -179,13 +178,16 @@ public class HttpApiInvoker implements InvocationHandler {
         return map;
     }
 
-    private void isMapStringString(Type arg) {
+    /**
+     * Check whether the Type is Map&lt;String, String&gt;
+     */
+    private void mustBeMapStringString(Type arg) {
         if (!(arg instanceof ParameterizedType) || ((ParameterizedType) arg).getRawType() != Map.class) {
-            throw new IllegalArgumentException("Headers annotation should only be annotated on parameter of Map<String, String&> type.");
+            throw new IllegalArgumentException("Headers and Cookies annotation should only be annotated on parameter of Map<String, String> type.");
         }
         Type[] types = ((ParameterizedType) arg).getActualTypeArguments();
         if (types[0] != String.class || types[1] != String.class) {
-            throw new IllegalArgumentException("Headers annotation should only be annotated on parameter of Map<String, String&> type.");
+            throw new IllegalArgumentException("Headers and Cookies annotation should only be annotated on parameter of Map<String, String> type.");
         }
     }
 
