@@ -137,7 +137,7 @@ public class HttpApiInvoker implements InvocationHandler {
      *
      * @param args    the arguments
      * @param method  the method invoked
-     * @param request
+     * @param request the request
      * @return the map represent the params
      */
     private Map<String, Object> parseAnnotatedParams(Object[] args, Method method, HttpRequest request) {
@@ -147,6 +147,10 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         Map<String, Object> map = null;
         for (int i = 0, annotationsLength = annotations.length; i < annotationsLength; i++) {
+            if (args[i] == null) {
+                // ignore null value
+                continue;
+            }
             Annotation[] annotation = annotations[i];
             for (Annotation ann : annotation) {
                 if (ann instanceof Param) {

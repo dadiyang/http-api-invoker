@@ -1,32 +1,62 @@
-# http接口调用框架
+# HTTP接口调用框架
 
-**让http接口调用跟调用本地方法一样自然优雅**
+**让 HTTP 接口调用跟调用本地方法一样自然优雅**
 
-将http api和接口绑定，然后由框架生成接口的代理类，无需自己发送 http 请求，直接调用接口的方法就会自动构建请求参数并发送请求，然后处理请求响应转换为接口方法的返回值返回（**支持泛型**）。
+将 HTTP 请求和接口绑定，然后由框架生成接口的代理类，直接调用接口的方法就会自动构建请求参数并发送请求，然后处理请求响应转换为接口方法的返回值返回（**支持泛型**）。
 
 若与 **Spring 集成（可选）**，更能使用 @Autowired 进行自动注入接口的代理实现。
 
 # 特色
 
 1. 像 MyBatis 一样，只写接口，由框架提供实现
-2. 轻量级，不要求依赖Spring，只使用少量注解和
-3. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
-4. 完善的文档用例和单元测试
+2. 轻量级，不要求依赖Spring，只使用少量注解
+3. 支持上传和下载文件
+4. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
+5. 完善的文档用例和单元测试
 
 # 原理
  
 **技术：动态代理 + 反射 + 注解 + 自动包扫描**
  
-* 使用@HttpReq **注解** 使接口方法与http服务地址绑定
-* 使用 **动态代理**，生成绑定了http请求的接口的代理实现类
+* 使用 @HttpReq **注解** 使接口方法与HTTP服务地址绑定
+* 使用 **动态代理**，生成绑定了 HTTP 请求的接口的代理实现类
 * 通过 **反射** 获取方法参数和返回值信息，根据这些信息处理请求
-* 利用 **包扫描**，注入所有HttpApi注解标注的接口到Spring容器中
+* 利用 **包扫描**，注入所有 @HttpApi 注解标注的接口到Spring容器中
  
 当调用接口的方法的时候框架会完成以下三个步骤
  
 1. 将方法参数根据规则序列化为所需的请求参数，并且填充路径参数（如果有的话）
 2. 发送请求（使用Jsoup发送）
 3. 将请求响应序列化为方法的返回值（使用fastJson反序列化） 
+
+# 核心注解
+
+## @HttpApiScan
+
+启动包扫描，类似@ComponentScan。
+* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
+* configPaths属性指定配置文件
+
+## @HttpApi
+
+标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
+
+## @HttpReq
+
+标注方法对应的url
+
+## @Param
+
+指定方法参数名对应的请求参数名称
+
+## @Headers
+
+指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+## @Cookies
+
+指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
 
 # 使用
  
@@ -203,33 +233,3 @@ public void getProxyTest() throws Exception {
      }
 }
 ```
-
-# 核心注解
-
-## @HttpApiScan
-
-启动包扫描，类似@ComponentScan。
-* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
-* configPaths属性指定配置文件
-
-## @HttpApi
-
-标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
-
-## @HttpReq
-
-标注方法对应的url
-
-## @Param
-
-指定方法参数名对应的请求参数名称
-
-## @Headers
-
-指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
-
-## @Cookies
-
-指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
-
-
