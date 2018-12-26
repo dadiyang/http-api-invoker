@@ -86,7 +86,11 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         request.setUrl(url);
         request.setData(params);
+        long start = System.currentTimeMillis();
         HttpResponse response = requestor.sendRequest(request);
+        if (log.isDebugEnabled()) {
+            log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
+        }
         if (response == null) {
             return null;
         }
