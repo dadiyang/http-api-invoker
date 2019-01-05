@@ -68,7 +68,7 @@ isBody: 指定是否将该参数的所有字段都做为单独的参数
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
  </dependency>
 ```
 
