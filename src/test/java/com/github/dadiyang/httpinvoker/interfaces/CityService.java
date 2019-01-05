@@ -6,6 +6,7 @@ import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -77,5 +78,21 @@ public interface CityService {
     @HttpReq("/getCityRest/{id}")
     City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
 
+    /**
+     * 判断给定的城市是否存在
+     * <p>
+     * 用于测试复杂对象做为参数是否可以被解析
+     */
+    @HttpReq("/getCity")
+    boolean hasCity(City city);
 
+    /**
+     * 上传输入流
+     *
+     * @param fileName 文件名
+     * @param in       输入流
+     */
+    @HttpReq(value = "/picture/upload", method = "POST")
+    String upload(@Param("fileName") String fileName,
+                  @Param(value = "media") InputStream in);
 }

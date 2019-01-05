@@ -10,12 +10,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCity;
@@ -163,5 +166,39 @@ public class CityServiceTest {
         List<City> cityList = JSON.parseArray(response.getBody(), City.class);
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));
+    }
+
+    @Test
+    public void hasCity() {
+        int id = 1;
+        City mockCity = createCity(id);
+        String uri = "/city/getCity";
+        wireMockRule.stubFor(get(urlPathEqualTo(uri))
+                .withQueryParam("id", equalTo(String.valueOf(mockCity.getId())))
+                .withQueryParam("name", equalTo(mockCity.getName()))
+                .willReturn(aResponse().withBody("true")));
+        boolean exists = cityService.hasCity(mockCity);
+        assertTrue(exists);
+    }
+
+    @Test
+    public void upload() {
+        String uri = "/city/picture/upload";
+        String randomName = UUID.randomUUID().toString();
+        String fileName = "conf.properties";
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName)) {
+            byte[] bytes = new byte[in.available()];
+            in.read(bytes);
+            wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                    .withMultipartRequestBody(aMultipart("media"))
+                    .withMultipartRequestBody(aMultipart("fileName").withBody(equalTo(fileName)))
+                    .willReturn(aResponse().withBody(randomName)));
+            String name = cityService.upload(fileName, in);
+            assertEquals(randomName, name);
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("read test file error");
+        }
+
     }
 }

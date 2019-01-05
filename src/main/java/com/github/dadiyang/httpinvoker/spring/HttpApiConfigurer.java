@@ -13,7 +13,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -26,6 +28,7 @@ import java.util.*;
 public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, ApplicationContextAware {
     private static final Logger logger = LoggerFactory.getLogger(HttpApiConfigurer.class);
     private static final String CLASSPATH_PRE = "classpath:";
+    private static final String FILE_PRE = "file:";
     private ApplicationContext ctx;
 
     @Override
@@ -45,11 +48,27 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
             String[] configPaths = ann.configPaths();
             if (configPaths.length > 0) {
                 for (String path : configPaths) {
+                    if (path == null || path.isEmpty()) {
+                        continue;
+                    }
                     if (path.startsWith(CLASSPATH_PRE)) {
-                        path = path.replace(CLASSPATH_PRE, "");
+                        // load from class path
+                        path = path.replaceFirst(CLASSPATH_PRE, "");
                         Properties p = new Properties();
-                        try {
-                            p.load(getClass().getClassLoader().getResourceAsStream(path));
+                        try (InputStream in = getClass().getClassLoader().getResourceAsStream(path)) {
+                            p.load(in);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("read config error: " + path, e);
+                        }
+                        properties.putAll(p);
+                    } else {
+                        // load from file
+                        if (path.startsWith(FILE_PRE)) {
+                            path = path.replaceFirst(FILE_PRE, "");
+                        }
+                        Properties p = new Properties();
+                        try (InputStream in = new FileInputStream(path)) {
+                            p.load(in);
                         } catch (IOException e) {
                             throw new IllegalStateException("read config error: " + path, e);
                         }

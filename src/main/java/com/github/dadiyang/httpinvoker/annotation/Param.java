@@ -23,6 +23,8 @@ public @interface Param {
 
     /**
      * mark that the argument is the request body
+     * <p>
+     * if the argument is an non-primary object, all the field-value will be a part of request params.
      *
      * @return if the argument is the request body
      */

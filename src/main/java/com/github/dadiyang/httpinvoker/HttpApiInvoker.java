@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
@@ -34,6 +36,9 @@ public class HttpApiInvoker implements InvocationHandler {
     private Requestor requestor;
     private Properties properties;
     private Class<?> clazz;
+    private List<Class<?>> notJsonifyType = Arrays.asList(Byte.class, Short.class,
+            Integer.class, Long.class, Float.class, Double.class, Character.class,
+            Boolean.class, String.class, Collection.class, Array.class);
 
     public HttpApiInvoker(Requestor requestor, Properties properties, Class<?> clazz) {
         this.requestor = requestor;
@@ -77,8 +82,13 @@ public class HttpApiInvoker implements InvocationHandler {
                 params = annotatedParam;
             } else if (request.getBody() == null) {
                 // else use the first arg as param
-                request.setBody(args[0]);
+                if (isCollection(args[0])) {
+                    request.setBody(args[0]);
+                } else {
+                    params = parseParam(args[0]);
+                }
             } else {
+                // try the parse body to a map
                 request.setData(parseParam(request.getBody()));
             }
             // fill path variable for the url
@@ -122,15 +132,22 @@ public class HttpApiInvoker implements InvocationHandler {
 
     private Map<String, Object> parseParam(Object arg) {
         Map<String, Object> params;
-        if (arg instanceof Collection
-                || arg instanceof Array
-                || arg.getClass().isArray()) {
+        Class<?> cls = arg.getClass();
+        if (cls.isPrimitive()
+                || isCollection(arg)
+                || notJsonifyType.contains(cls)) {
             // we don't handle collection param here
             params = null;
         } else {
             params = JSON.parseObject(JSON.toJSONString(arg));
         }
         return params;
+    }
+
+    private boolean isCollection(Object arg) {
+        return arg.getClass().isArray()
+                || arg instanceof Collection
+                || arg instanceof Array;
     }
 
     /**
@@ -162,9 +179,16 @@ public class HttpApiInvoker implements InvocationHandler {
                     if (map == null) {
                         map = new HashMap<>();
                     }
-                    if (param.isBody()) {
+                    if (isFile(args[i])) {
                         request.setBody(args[i]);
                         request.setFileFormKey(param.value());
+                    } else if (param.isBody()) {
+                        Map<String, Object> body = parseParam(args[i]);
+                        if (body == null) {
+                            map.put(param.value(), args[i]);
+                        } else {
+                            map.putAll(body);
+                        }
                     } else {
                         String key = param.value();
                         if (!key.isEmpty()) {
@@ -175,15 +199,22 @@ public class HttpApiInvoker implements InvocationHandler {
                 }
                 if (ann instanceof Headers) {
                     mustBeMapStringString(method.getGenericParameterTypes()[i]);
+                    //noinspection unchecked
                     request.setHeaders((Map<String, String>) args[i]);
                 }
                 if (ann instanceof Cookies) {
                     mustBeMapStringString(method.getGenericParameterTypes()[i]);
+                    //noinspection unchecked
                     request.setCookies((Map<String, String>) args[i]);
                 }
             }
         }
         return map;
+    }
+
+    private boolean isFile(Object arg) {
+        return InputStream.class.isAssignableFrom(arg.getClass())
+                || File.class.isAssignableFrom(arg.getClass());
     }
 
     /**

@@ -23,7 +23,7 @@ public class CityUtil {
                 return city;
             }
         }
-        return null;
+        throw new IllegalArgumentException("city not exists, id:" + id);
     }
 
     public static City createCity(String name) {
