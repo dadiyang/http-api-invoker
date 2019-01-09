@@ -27,15 +27,19 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static org.junit.Assert.*;
 
 public class CityServiceTest {
-    private CityService cityService;
     private static final int PORT = 18888;
+    private CityService cityService;
+    private HttpApiProxyFactory httpApiProxyFactory;
+    private String authKey;
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(PORT));
 
     @Before
     public void setUp() throws Exception {
         System.setProperty("api.url.city.host", "http://localhost:" + PORT);
-        cityService = new HttpApiProxyFactory().getProxy(CityService.class);
+        httpApiProxyFactory = new HttpApiProxyFactory();
+        cityService = httpApiProxyFactory.getProxy(CityService.class);
+        authKey = UUID.randomUUID().toString();
     }
 
     @Test
@@ -54,7 +58,7 @@ public class CityServiceTest {
         String uri = "/city/getById?id=" + id;
         City mockCity = createCity(id);
         wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
-        City city = cityService.getCity(id);
+        City city = HttpApiProxyFactory.newProxy(CityService.class).getCity(id);
         assertEquals(mockCity, city);
     }
 
@@ -199,6 +203,23 @@ public class CityServiceTest {
             e.printStackTrace();
             fail("read test file error");
         }
+    }
 
+    @Test
+    public void preprocessorTest() {
+        HttpApiProxyFactory factory = new HttpApiProxyFactory(request -> {
+            request.addCookie("authCookies", authKey);
+            request.addHeaders("authHeaders", authKey);
+        });
+        CityService cityServiceWithPreprocessor = factory.getProxy(CityService.class);
+        int id = 1;
+        String uri = "/city/getById?id=" + id;
+        City mockCity = createCity(id);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .withCookie("authCookies", equalTo(authKey))
+                .withHeader("authHeaders", equalTo(authKey))
+                .willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
+        City city = cityServiceWithPreprocessor.getCity(id);
+        assertEquals(mockCity, city);
     }
 }

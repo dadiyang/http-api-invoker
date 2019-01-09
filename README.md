@@ -29,37 +29,6 @@
 2. 发送请求（使用Jsoup发送）
 3. 将请求响应序列化为方法的返回值（使用fastJson反序列化） 
 
-# 核心注解
-
-## @HttpApiScan
-
-启动包扫描，类似@ComponentScan。
-* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
-* configPaths属性指定配置文件
-
-## @HttpApi
-
-标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
-
-## @HttpReq
-
-标注方法对应的url
-
-## @Param
-
-value: 指定方法参数名对应的请求参数名称
-isBody: 指定是否将该参数的所有字段都做为单独的参数
-这两个参数不能同时为空
-
-## @Headers
-
-指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
-
-## @Cookies
-
-指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
-
-
 # 使用
  
 ## 一、添加maven依赖
@@ -68,7 +37,7 @@ isBody: 指定是否将该参数的所有字段都做为单独的参数
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
  </dependency>
 ```
 
@@ -228,10 +197,63 @@ public void test() {
 
 ```java
 public void getProxyTest() throws Exception {
-     CityService service = new HttpApiProxyFactory().getProxy(CityService.class);
+     CityService service = HttpApiProxyFactory.newProxy(CityService.class);
+//   或者new一个新的proxyFactory，重用这个factory可以使用相同的配置创建代理
+//   HttpApiProxyFactory factory = new HttpApiProxyFactory(...);
+//   CityService service = factory.getProxy(CityService.class);
      List<City> cities = service.getAllCities();
      for (City city : cities) {
          System.out.println(city);
      }
 }
 ```
+
+## 五、扩展：请求前置处理器
+
+有些情况下，我们需要给所有的请求添加一个请求头、Cookie或者固定的参数，这时候如果我们在接口里添加这些参数会很冗余
+
+此时，我们可以实现 RequestPreprocessor 接口，并在初始化代理工厂时使用该接口，此时所有的请求都会通过这个接口进行预处理
+
+我们可以在框架发送请求之前对请求体做任何修改
+
+```java
+public void preprocessorTest() {
+    HttpApiProxyFactory factory = new HttpApiProxyFactory(request -> {
+        // 我们为所有的请求都加上 cookie 和 header
+        request.addCookie("authCookies", authKey);
+        request.addHeaders("authHeaders", authKey);
+    });
+    CityService cityService = factory.getProxy(CityService.class);
+    City city = cityService.getCity(id);
+}
+```
+
+# 核心注解
+
+## @HttpApiScan
+
+启动包扫描，类似@ComponentScan。
+* value属性设定扫包的 basePackage，如果没有设置则使用被标注的类所在的包为基包
+* configPaths属性指定配置文件
+
+## @HttpApi
+
+标注一个类是与Http接口绑定的，需要被包扫描的接口。类似Spring中的@Component注解
+
+## @HttpReq
+
+标注方法对应的url
+
+## @Param
+
+value: 指定方法参数名对应的请求参数名称
+isBody: 指定是否将该参数的所有字段都做为单独的参数
+这两个参数不能同时为空
+
+## @Headers
+
+指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+## @Cookies
+
+指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`

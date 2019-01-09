@@ -1,5 +1,6 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -56,6 +57,20 @@ public class HttpRequest {
         this.headers = headers;
     }
 
+    public void addHeaders(String key, String value) {
+        if (headers == null) {
+            headers = new HashMap<>(8);
+        }
+        headers.put(key, value);
+    }
+
+    public void addCookie(String key, String value) {
+        if (cookies == null) {
+            cookies = new HashMap<>(8);
+        }
+        cookies.put(key, value);
+    }
+
     public Map<String, String> getCookies() {
         return cookies;
     }
@@ -70,6 +85,13 @@ public class HttpRequest {
 
     public void setData(Map<String, Object> data) {
         this.data = data;
+    }
+
+    public void addParam(String key, String value) {
+        if (data == null) {
+            data = new HashMap<>(8);
+        }
+        data.put(key, value);
     }
 
     public Object getBody() {

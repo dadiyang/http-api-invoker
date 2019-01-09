@@ -30,7 +30,6 @@ public class DefaultHttpRequestor implements Requestor {
     private static final String DEFAULT_UPLOAD_FORM_KEY = "media";
     private static final String FORM_KEY = "formKey";
 
-
     /**
      * {@inheritDoc}
      */

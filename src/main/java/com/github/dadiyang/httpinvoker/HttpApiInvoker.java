@@ -2,9 +2,7 @@ package com.github.dadiyang.httpinvoker;
 
 import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.*;
-import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
-import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
-import com.github.dadiyang.httpinvoker.requestor.Requestor;
+import com.github.dadiyang.httpinvoker.requestor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,11 +36,14 @@ public class HttpApiInvoker implements InvocationHandler {
     private Class<?> clazz;
     private List<Class<?>> notJsonifyType = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
-            Boolean.class, String.class, Collection.class, Array.class);
+            Boolean.class, String.class, Array.class);
+    private RequestPreprocessor requestPreprocessor;
 
-    public HttpApiInvoker(Requestor requestor, Properties properties, Class<?> clazz) {
-        this.requestor = requestor;
-        this.properties = properties;
+    public HttpApiInvoker(Requestor requestor, Properties properties,
+                          Class<?> clazz, RequestPreprocessor requestPreprocessor) {
+        this.requestor = requestor == null ? new DefaultHttpRequestor() : requestor;
+        this.properties = properties == null ? System.getProperties() : properties;
+        this.requestPreprocessor = requestPreprocessor;
         this.clazz = clazz;
     }
 
@@ -97,6 +98,9 @@ public class HttpApiInvoker implements InvocationHandler {
         request.setUrl(url);
         request.setData(params);
         long start = System.currentTimeMillis();
+        if (requestPreprocessor != null) {
+            requestPreprocessor.process(request);
+        }
         HttpResponse response = requestor.sendRequest(request);
         if (log.isDebugEnabled()) {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
