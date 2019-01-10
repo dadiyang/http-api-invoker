@@ -5,6 +5,7 @@ import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
+import com.github.dadiyang.httpinvoker.requestor.Status;
 
 import java.io.InputStream;
 import java.util.List;
@@ -17,11 +18,13 @@ import java.util.Map;
  * date 2018/11/1
  */
 @HttpApi(prefix = "${api.url.city.host}/city")
+@RetryPolicy
 public interface CityService {
     /**
      * 使用URI，会自动添加prefix指定的前缀
      */
     @HttpReq("/allCities")
+    @RetryPolicy(times = 2, fixedBackOffPeriod = 3000)
     List<City> getAllCities();
 
     /**
@@ -34,6 +37,7 @@ public interface CityService {
      * 如果是集合类或数组的参数数据会直接当成请求体直接发送
      */
     @HttpReq(value = "/save", method = "POST")
+    @RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
     boolean saveCities(List<City> cities);
 
     /**
@@ -52,7 +56,7 @@ public interface CityService {
      * 支持路径参数
      */
     @HttpReq("/getCityRest/{id}")
-    City getCityRest(@Param("id") int id);
+    City getCityRest(@Param("id") Integer id);
 
     /**
      * 获取请求体，可以拿到请求头和cookie等信息

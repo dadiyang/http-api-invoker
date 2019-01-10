@@ -84,7 +84,7 @@ public class HttpApiInvoker implements InvocationHandler {
                 // else use the first arg as param
                 if (isCollection(args[0])) {
                     request.setBody(args[0]);
-                } else {
+                } else if (args[0] != null) {
                     params = parseParam(args[0]);
                 }
             } else {
@@ -103,7 +103,13 @@ public class HttpApiInvoker implements InvocationHandler {
         url = fillPathVariables(request.getData(), url, true);
         request.setUrl(url);
         long start = System.currentTimeMillis();
-        HttpResponse response = requestor.sendRequest(request);
+        HttpResponse response = null;
+        RetryPolicy retryPolicy = getRetryPolicy(method);
+        if (retryPolicy == null) {
+            response = requestor.sendRequest(request);
+        } else {
+            response = retrySendRequest(request, retryPolicy);
+        }
         if (log.isDebugEnabled()) {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
@@ -136,6 +142,69 @@ public class HttpApiInvoker implements InvocationHandler {
         return JSON.parseObject(response.getBodyAsBytes(), type);
     }
 
+    /**
+     * retry send request according to the retry policy
+     */
+    private HttpResponse retrySendRequest(HttpRequest request, RetryPolicy retryPolicy) throws IOException {
+        int retryTime = retryPolicy.times();
+        if (retryTime <= 0) {
+            return requestor.sendRequest(request);
+        }
+        Status[] retryForStatus = retryPolicy.retryForStatus();
+        Class<? extends Throwable>[] retryFor = retryPolicy.retryFor();
+        HttpResponse response = null;
+        int tryTime = 0;
+        while (++tryTime <= retryTime) {
+            if (tryTime > 1 && retryPolicy.fixedBackOffPeriod() > 0) {
+                try {
+                    Thread.sleep(retryPolicy.fixedBackOffPeriod());
+                } catch (InterruptedException ignored) {
+                }
+            }
+            boolean needRetry = false;
+            try {
+                response = requestor.sendRequest(request);
+                int statusCode = response.getStatusCode();
+                for (Status status : retryForStatus) {
+                    if (statusCode >= status.getFrom() && statusCode <= status.getTo()) {
+                        needRetry = true;
+                    }
+                }
+                if (!needRetry) {
+                    return response;
+                }
+            } catch (Exception e) {
+                if (tryTime >= retryTime) {
+                    // it's the last time we try
+                    throw e;
+                }
+                // check if we need to retry
+                for (Class<? extends Throwable> exception : retryFor) {
+                    if (exception.isAssignableFrom(e.getClass())) {
+                        needRetry = true;
+                    }
+                }
+                if (!needRetry) {
+                    // an unexpected exception occur, so we throw it
+                    throw e;
+                } else {
+                    log.warn("send request error, tryTime: {}, error: {}", tryTime, e.getMessage());
+                }
+            }
+        }
+        return response;
+    }
+
+    private RetryPolicy getRetryPolicy(Method method) {
+        RetryPolicy retryPolicy = null;
+        if (method.isAnnotationPresent(RetryPolicy.class)) {
+            retryPolicy = method.getAnnotation(RetryPolicy.class);
+        } else if (clazz.isAnnotationPresent(RetryPolicy.class)) {
+            retryPolicy = clazz.getAnnotation(RetryPolicy.class);
+        }
+        return retryPolicy;
+    }
+
     private Map<String, Object> parseParam(Object arg) {
         Map<String, Object> params;
         Class<?> cls = arg.getClass();
@@ -151,6 +220,9 @@ public class HttpApiInvoker implements InvocationHandler {
     }
 
     private boolean isCollection(Object arg) {
+        if (arg == null) {
+            return false;
+        }
         return arg.getClass().isArray()
                 || arg instanceof Collection
                 || arg instanceof Array;

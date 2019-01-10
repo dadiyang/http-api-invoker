@@ -37,7 +37,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
  </dependency>
 ```
 
@@ -65,8 +65,12 @@ public interface CityService {
     /**
     * 默认使用GET方法，可以通过method指定请求方式
     * 如果是集合类或数组的参数数据会直接当成请求体直接发送
+    * 
+    * RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
+    * 重试策略: 当服务器返回50x状态码时进行重试，具体请看 RetryPolicy 注解说明 
     */
     @HttpReq(value = "/save", method = "POST")
+    @RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
     boolean saveCities(List<City> cities);
     /**
     * 使用完整的路径，不会添加前缀
@@ -257,3 +261,12 @@ isBody: 指定是否将该参数的所有字段都做为单独的参数
 ## @Cookies
 
 指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+## @RetryPolicy 重试策略
+
+重试策略。可以打在类和方法上，方法上的策略优先于类上的。
+
+* times 尝试调用次数，默认 3 次
+* retryFor 当发生该异常时才重试，默认只在 IOException 时触发重试
+* retryForStatus 当服务器返回的状态码为某一类型时触发，默认只要服务器返回非 20x 的状态都进行重试
+* fixedBackOffPeriod 退避策略，当需要进行重试时休眠的秒数，默认不休眠

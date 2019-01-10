@@ -11,7 +11,7 @@ import java.lang.annotation.*;
  * @author huangxuyang
  * date 2018/10/30
  */
-@Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface HttpReq {

@@ -48,7 +48,8 @@ public class DefaultHttpRequestor implements Requestor {
                     .method(m)
                     .timeout(timeout)
                     .header("Content-Type", "application/json; charset=utf-8")
-                    .ignoreContentType(true);
+                    .ignoreContentType(true)
+                    .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
             response = conn.execute();
         } else {
@@ -56,7 +57,8 @@ public class DefaultHttpRequestor implements Requestor {
                     .method(m)
                     .timeout(timeout)
                     .header("Content-Type", "application/json; charset=utf-8")
-                    .ignoreContentType(true);
+                    .ignoreContentType(true)
+                    .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
             Map<String, Object> data = request.getData();
             // body first
@@ -162,6 +164,4 @@ public class DefaultHttpRequestor implements Requestor {
         }
         return builder.toString().substring(0, builder.length() - 1);
     }
-
-
 }
