@@ -69,14 +69,13 @@ public class HttpApiInvoker implements InvocationHandler {
             HttpApi httpApi = clazz.getAnnotation(HttpApi.class);
             url = httpApi.prefix() + url;
         }
-
+        // prepare param
+        HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
         // fill config variables again
         url = fillConfigVariables(url);
-
-        // prepare param
-        Map<String, Object> params = null;
-        HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
+        request.setUrl(url);
         if (args != null && args.length > 0) {
+            Map<String, Object> params = null;
             Map<String, Object> annotatedParam = parseAnnotatedParams(args, method, request);
             // use annotated param if exists
             if (annotatedParam != null && !annotatedParam.isEmpty()) {
@@ -93,14 +92,17 @@ public class HttpApiInvoker implements InvocationHandler {
                 request.setData(parseParam(request.getBody()));
             }
             // fill path variable for the url
-            url = fillPathVariables(params, url);
+            url = fillPathVariables(params, url, false);
+            request.setUrl(url);
+            request.setData(params);
         }
-        request.setUrl(url);
-        request.setData(params);
-        long start = System.currentTimeMillis();
         if (requestPreprocessor != null) {
             requestPreprocessor.process(request);
         }
+        // fill path variable again, so that user can provide some param by requestPreprocessor
+        url = fillPathVariables(request.getData(), url, true);
+        request.setUrl(url);
+        long start = System.currentTimeMillis();
         HttpResponse response = requestor.sendRequest(request);
         if (log.isDebugEnabled()) {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
@@ -237,10 +239,11 @@ public class HttpApiInvoker implements InvocationHandler {
     /**
      * replace the path variable for the specific param, and remove that param from the map
      *
+     * @param exceptionOnNotProvided if throw an exception on path variable doesn't provided
      * @return the path variable filled url
      * @throws IllegalArgumentException thrown when the specific param absent
      */
-    private String fillPathVariables(Map<String, Object> params, String url) {
+    private String fillPathVariables(Map<String, Object> params, String url, boolean exceptionOnNotProvided) {
         Matcher matcher = PATH_VARIABLE_PATTERN.matcher(url);
         while (matcher.find()) {
             String key = matcher.group(1);
@@ -250,7 +253,11 @@ public class HttpApiInvoker implements InvocationHandler {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
                 log.warn(msg);
-                throw new IllegalArgumentException(msg);
+                if (exceptionOnNotProvided) {
+                    throw new IllegalArgumentException(msg);
+                } else {
+                    continue;
+                }
             }
             String prop = params.remove(key).toString();
             url = url.replace("{" + key + "}", prop);

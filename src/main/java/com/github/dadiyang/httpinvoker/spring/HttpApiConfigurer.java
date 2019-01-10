@@ -1,7 +1,7 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.annotation.HttpApiScan;
-import com.github.dadiyang.httpinvoker.requestor.DefaultHttpRequestor;
+import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,14 +80,19 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
         if (logger.isDebugEnabled()) {
             logger.debug("HttpApiScan packages: " + basePackages);
         }
-        Requestor requestor;
+        Requestor requestor = null;
         try {
             requestor = ctx.getBean(Requestor.class);
-        } catch (Exception ignored) {
-            logger.debug("Requestor bean is not exist, use the default one");
-            requestor = new DefaultHttpRequestor();
+        } catch (Exception e) {
+            logger.debug("Requestor bean does not exist: " + e.getMessage());
         }
-        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, properties, requestor);
+        RequestPreprocessor requestPreprocessor = null;
+        try {
+            requestPreprocessor = ctx.getBean(RequestPreprocessor.class);
+        } catch (Exception e) {
+            logger.debug("RequestPreprocessor bean does not exist" + e.getMessage());
+        }
+        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, properties, requestor, requestPreprocessor);
         scanner.doScan(basePackages.toArray(new String[]{}));
     }
 

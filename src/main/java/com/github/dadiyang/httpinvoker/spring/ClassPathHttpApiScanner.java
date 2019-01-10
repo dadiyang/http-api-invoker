@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.annotation.HttpApi;
+import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
@@ -28,14 +29,17 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     private Class<? extends Annotation> includeAnn;
     private Properties properties;
     private Requestor requestor;
+    private RequestPreprocessor requestPreprocessor;
 
-    public ClassPathHttpApiScanner(BeanDefinitionRegistry registry, Properties properties, Requestor requestor) {
+    public ClassPathHttpApiScanner(BeanDefinitionRegistry registry, Properties properties,
+                                   Requestor requestor, RequestPreprocessor requestPreprocessor) {
         super(registry, false);
         this.factoryBean = HttpApiProxyFactoryBean.class;
         this.includeAnn = HttpApi.class;
         addIncludeFilter(new AnnotationTypeFilter(includeAnn));
         this.properties = properties;
         this.requestor = requestor;
+        this.requestPreprocessor = requestPreprocessor;
     }
 
     @Override
@@ -90,6 +94,9 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
         definition.getPropertyValues().add("properties", properties);
         if (requestor != null) {
             definition.getPropertyValues().add("requestor", requestor);
+        }
+        if (requestPreprocessor != null) {
+            definition.getPropertyValues().add("requestPreprocessor", requestPreprocessor);
         }
         // 获取bean名，注意：获取 BeanName 要在setBeanClass之前，否则BeanName就会被覆盖
         // caution! we nned to getBeanName first before setBeanClass

@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
+import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.springframework.beans.factory.FactoryBean;
 
@@ -17,6 +18,7 @@ public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
     private Requestor requestor;
     private Class<T> interfaceClass;
     private Properties properties;
+    private RequestPreprocessor requestPreprocessor;
 
     public Class<T> getInterfaceClass() {
         return interfaceClass;
@@ -34,10 +36,14 @@ public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
         this.properties = properties;
     }
 
+    public void setRequestPreprocessor(RequestPreprocessor requestPreprocessor) {
+        this.requestPreprocessor = requestPreprocessor;
+    }
+
     @Override
     public T getObject() throws Exception {
         if (proxyFactory == null) {
-            proxyFactory = new HttpApiProxyFactory(requestor, properties);
+            proxyFactory = new HttpApiProxyFactory(requestor, properties, requestPreprocessor);
         }
         return (T) proxyFactory.getProxy(interfaceClass);
     }

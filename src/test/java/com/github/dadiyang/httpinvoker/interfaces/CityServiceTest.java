@@ -28,16 +28,15 @@ import static org.junit.Assert.*;
 
 public class CityServiceTest {
     private static final int PORT = 18888;
-    private CityService cityService;
-    private HttpApiProxyFactory httpApiProxyFactory;
-    private String authKey;
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(PORT));
+    private CityService cityService;
+    private String authKey;
 
     @Before
     public void setUp() throws Exception {
         System.setProperty("api.url.city.host", "http://localhost:" + PORT);
-        httpApiProxyFactory = new HttpApiProxyFactory();
+        HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory();
         cityService = httpApiProxyFactory.getProxy(CityService.class);
         authKey = UUID.randomUUID().toString();
     }
@@ -209,7 +208,7 @@ public class CityServiceTest {
     public void preprocessorTest() {
         HttpApiProxyFactory factory = new HttpApiProxyFactory(request -> {
             request.addCookie("authCookies", authKey);
-            request.addHeaders("authHeaders", authKey);
+            request.addHeader("authHeaders", authKey);
         });
         CityService cityServiceWithPreprocessor = factory.getProxy(CityService.class);
         int id = 1;

@@ -2,7 +2,6 @@ package com.github.dadiyang.httpinvoker.requestor;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author huangxuyang
@@ -57,7 +56,7 @@ public class HttpRequest {
         this.headers = headers;
     }
 
-    public void addHeaders(String key, String value) {
+    public void addHeader(String key, String value) {
         if (headers == null) {
             headers = new HashMap<>(8);
         }
@@ -116,26 +115,5 @@ public class HttpRequest {
 
     public void setFileFormKey(String fileFormKey) {
         this.fileFormKey = fileFormKey;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        HttpRequest request = (HttpRequest) o;
-        return timeout == request.timeout &&
-                Objects.equals(method, request.method) &&
-                Objects.equals(url, request.url) &&
-                Objects.equals(headers, request.headers) &&
-                Objects.equals(cookies, request.cookies) &&
-                Objects.equals(data, request.data) &&
-                Objects.equals(body, request.body) &&
-                Objects.equals(fileFormKey, request.fileFormKey);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(method, timeout, url, headers, cookies, data, body, fileFormKey);
     }
 }

@@ -221,7 +221,7 @@ public void preprocessorTest() {
     HttpApiProxyFactory factory = new HttpApiProxyFactory(request -> {
         // 我们为所有的请求都加上 cookie 和 header
         request.addCookie("authCookies", authKey);
-        request.addHeaders("authHeaders", authKey);
+        request.addHeader("authHeaders", authKey);
     });
     CityService cityService = factory.getProxy(CityService.class);
     City city = cityService.getCity(id);
