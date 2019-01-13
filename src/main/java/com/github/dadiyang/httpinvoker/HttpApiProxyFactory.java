@@ -1,5 +1,7 @@
 package com.github.dadiyang.httpinvoker;
 
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.DefaultHttpRequestor;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
@@ -19,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HttpApiProxyFactory {
     private Map<Class<?>, Object> instances = new ConcurrentHashMap<>();
     private Requestor requestor;
-    private Properties properties;
+    private PropertyResolver propertyResolver;
     private RequestPreprocessor requestPreprocessor;
 
     public HttpApiProxyFactory() {
@@ -43,45 +45,91 @@ public class HttpApiProxyFactory {
     }
 
     public HttpApiProxyFactory(RequestPreprocessor requestPreprocessor) {
-        this(null, null, requestPreprocessor);
+        this.requestPreprocessor = requestPreprocessor;
+    }
+
+
+    public HttpApiProxyFactory(PropertyResolver propertyResolver) {
+        this(new DefaultHttpRequestor(), propertyResolver);
+    }
+
+    public HttpApiProxyFactory(Requestor requestor, PropertyResolver propertyResolver) {
+        this(requestor, propertyResolver, null);
+    }
+
+    public HttpApiProxyFactory(PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor) {
+        this(null, propertyResolver, requestPreprocessor);
     }
 
     public HttpApiProxyFactory(Requestor requestor,
                                Properties properties,
                                RequestPreprocessor requestPreprocessor) {
         this.requestor = requestor;
-        this.properties = properties;
+        this.propertyResolver = properties == null ? null : new PropertiesBasePropertyResolver(properties);
+        this.requestPreprocessor = requestPreprocessor;
+    }
+
+    public HttpApiProxyFactory(Requestor requestor,
+                               PropertyResolver propertyResolver,
+                               RequestPreprocessor requestPreprocessor) {
+        this.requestor = requestor;
+        this.propertyResolver = propertyResolver;
         this.requestPreprocessor = requestPreprocessor;
     }
 
     public static <T> T newProxy(Class<T> clazz) {
-        return newProxyInstance(null, null, clazz, null);
+        return newProxy(clazz, System.getProperties());
     }
 
     public static <T> T newProxy(Class<T> clazz, Properties properties) {
-        return newProxyInstance(null, properties, clazz, null);
+        return newProxy(clazz, null, properties);
     }
 
     public static <T> T newProxy(Class<T> clazz, RequestPreprocessor requestPreprocessor) {
-        return newProxyInstance(null, null, clazz, requestPreprocessor);
+        return newProxy(clazz, System.getProperties(), requestPreprocessor);
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor) {
-        return newProxyInstance(requestor, null, clazz, null);
+        return newProxy(clazz, null, System.getProperties());
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor, Properties properties) {
-        return newProxyInstance(requestor, properties, clazz, null);
+        return newProxy(clazz, requestor, properties, null);
     }
 
     public static <T> T newProxy(Class<T> clazz, Properties properties, RequestPreprocessor requestPreprocessor) {
-        return newProxyInstance(null, properties, clazz, requestPreprocessor);
+        return newProxy(clazz, null, properties, requestPreprocessor);
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor,
                                  Properties properties,
                                  RequestPreprocessor requestPreprocessor) {
         return newProxyInstance(requestor, properties, clazz, requestPreprocessor);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, PropertyResolver propertyResolver) {
+        return newProxy(clazz, null, propertyResolver);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, Requestor requestor, PropertyResolver propertyResolver) {
+        return newProxy(clazz, requestor, propertyResolver, null);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor) {
+        return newProxy(clazz, null, propertyResolver, requestPreprocessor);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, Requestor requestor,
+                                 PropertyResolver propertyResolver,
+                                 RequestPreprocessor requestPreprocessor) {
+        return newProxyInstance(requestor, propertyResolver, clazz, requestPreprocessor);
+    }
+
+    private static <T> T newProxyInstance(Requestor requestor, PropertyResolver propertyResolver,
+                                          Class<?> clazz, RequestPreprocessor requestPreprocessor) {
+        InvocationHandler handler = new HttpApiInvoker(requestor, propertyResolver, clazz, requestPreprocessor);
+        //noinspection unchecked
+        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, handler);
     }
 
     private static <T> T newProxyInstance(Requestor requestor, Properties properties,
@@ -103,7 +151,7 @@ public class HttpApiProxyFactory {
         if (!instances.containsKey(clazz)) {
             synchronized (HttpApiProxyFactory.class) {
                 if (!instances.containsKey(clazz)) {
-                    instances.put(clazz, newProxyInstance(requestor, properties,
+                    instances.put(clazz, newProxyInstance(requestor, propertyResolver,
                             clazz, requestPreprocessor));
                 }
             }

@@ -1,6 +1,10 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.annotation.HttpApiScan;
+import com.github.dadiyang.httpinvoker.propertyresolver.EnvironmentBasePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.MultiSourcePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.slf4j.Logger;
@@ -36,7 +40,6 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
         Map<String, Object> beans = ctx.getBeansWithAnnotation(HttpApiScan.class);
         Set<String> basePackages = new HashSet<>();
         Properties properties = new Properties();
-        properties.putAll(System.getProperties());
         for (Map.Entry<String, Object> entry : beans.entrySet()) {
             HttpApiScan ann = entry.getValue().getClass().getAnnotation(HttpApiScan.class);
             if (ann.value().length <= 0 || ann.value()[0].isEmpty()) {
@@ -92,7 +95,18 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
         } catch (Exception e) {
             logger.debug("RequestPreprocessor bean does not exist" + e.getMessage());
         }
-        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, properties, requestor, requestPreprocessor);
+        PropertyResolver resolver;
+        if (properties.size() > 0) {
+            MultiSourcePropertyResolver multi = new MultiSourcePropertyResolver();
+            // use properties both from config files and environment
+            multi.addPropertyResolver(new PropertiesBasePropertyResolver(properties));
+            multi.addPropertyResolver(new EnvironmentBasePropertyResolver(ctx.getEnvironment()));
+            resolver = multi;
+        } else {
+            // use properties from environment
+            resolver = new EnvironmentBasePropertyResolver(ctx.getEnvironment());
+        }
+        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, resolver, requestor, requestPreprocessor);
         scanner.doScan(basePackages.toArray(new String[]{}));
     }
 

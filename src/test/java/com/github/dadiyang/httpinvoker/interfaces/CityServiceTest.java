@@ -161,6 +161,7 @@ public class CityServiceTest {
         String headerKey = "header1";
         String headerValue = "value11";
         wireMockRule.stubFor(get(urlEqualTo(uri))
+                // 带了 header 的响应
                 .willReturn(okJson(JSON.toJSONString(mockCities)).withHeader(headerKey, headerValue)));
         HttpResponse response = cityService.listCity();
         System.out.println("获取到headers:" + response.getHeaders());

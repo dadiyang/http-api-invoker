@@ -5,10 +5,12 @@ import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 @Configuration
 @ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker"})
-@HttpApiScan(configPaths = "classpath:conf.properties")
+@HttpApiScan
+@PropertySource("classpath:conf.properties")
 public class TestApplication {
 
     @Bean

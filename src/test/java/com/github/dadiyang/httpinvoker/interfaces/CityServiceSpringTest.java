@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestApplication.class)
 public class CityServiceSpringTest {
-    private static final int PORT = 18889;
+    private static final int PORT = 18888;
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(PORT));
     @Autowired

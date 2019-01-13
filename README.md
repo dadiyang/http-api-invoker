@@ -37,7 +37,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.8</version>
+    <version>1.0.9</version>
  </dependency>
 ```
 
@@ -152,7 +152,9 @@ public interface CityService {
         ```
  2. 像@ComponentScan注解一样，在有 @Configuration 注解的类上加上 @HttpApiScan 注解开启服务接口扫描
     
-    注： configPaths是可选的，用于填充url中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
+    注：configPaths是可选的，用于填充url中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
+    
+    注：与Spring集成且使用自动扫包注入的话，在Spring的Environment中能解析到的配置项，本框架也可以读取到，因此不需要额外的配置
 
     ```java
     @Configuration

@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.annotation.HttpApi;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.springframework.beans.factory.FactoryBean;
@@ -15,7 +16,6 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -27,17 +27,19 @@ import java.util.Set;
 public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     private Class<? extends FactoryBean> factoryBean;
     private Class<? extends Annotation> includeAnn;
-    private Properties properties;
+    private PropertyResolver propertyResolver;
     private Requestor requestor;
     private RequestPreprocessor requestPreprocessor;
+    private BeanDefinitionRegistry registry;
 
-    public ClassPathHttpApiScanner(BeanDefinitionRegistry registry, Properties properties,
+    public ClassPathHttpApiScanner(BeanDefinitionRegistry registry, PropertyResolver propertyResolver,
                                    Requestor requestor, RequestPreprocessor requestPreprocessor) {
         super(registry, false);
+        this.registry = registry;
+        this.propertyResolver = propertyResolver;
         this.factoryBean = HttpApiProxyFactoryBean.class;
         this.includeAnn = HttpApi.class;
         addIncludeFilter(new AnnotationTypeFilter(includeAnn));
-        this.properties = properties;
         this.requestor = requestor;
         this.requestPreprocessor = requestPreprocessor;
     }
@@ -64,11 +66,17 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
      */
     @Override
     protected boolean checkCandidate(String beanName, BeanDefinition beanDefinition) {
+        // Sometimes, the package scan will be conflicted with MyBatis
+        // so the existing is not the expected one, we remove it.
+        if (this.registry.containsBeanDefinition(beanName)) {
+            logger.warn("HttpApi bean [" + beanName + "] exists, we remove it, so that we can generate a new bean.");
+            registry.removeBeanDefinition(beanName);
+        }
         if (super.checkCandidate(beanName, beanDefinition)) {
             return true;
         } else {
             logger.warn("Skipping " + factoryBean.getSimpleName() + " with name '" + beanName
-                    + "' and '" + beanDefinition.getBeanClassName() + "' mapperInterface"
+                    + "' and '" + beanDefinition.getBeanClassName() + "' interface"
                     + ". Bean already defined with the same name!");
             return false;
         }
@@ -81,7 +89,7 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     protected void registerBeanDefinition(BeanDefinitionHolder holder, BeanDefinitionRegistry registry) {
         GenericBeanDefinition definition = (GenericBeanDefinition) holder.getBeanDefinition();
         if (logger.isDebugEnabled()) {
-            logger.debug("Creating " + includeAnn.getSimpleName() + "Bean with name '" + holder.getBeanName()
+            logger.debug("c " + includeAnn.getSimpleName() + "Bean with name '" + holder.getBeanName()
                     + "' and '" + definition.getBeanClassName() + "' interface");
         }
         if (logger.isDebugEnabled()) {
@@ -91,7 +99,7 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
         // 需要被代理的接口 the interface
         definition.getPropertyValues().add("interfaceClass", definition.getBeanClassName());
         // 配置项
-        definition.getPropertyValues().add("properties", properties);
+        definition.getPropertyValues().add("propertyResolver", propertyResolver);
         if (requestor != null) {
             definition.getPropertyValues().add("requestor", requestor);
         }

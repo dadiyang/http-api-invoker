@@ -1,11 +1,10 @@
 package com.github.dadiyang.httpinvoker.spring;
 
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import org.springframework.beans.factory.FactoryBean;
-
-import java.util.Properties;
 
 /**
  * A factory bean which produce HttpApi interface's implement by using proxyFactory
@@ -17,7 +16,7 @@ public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
     private HttpApiProxyFactory proxyFactory;
     private Requestor requestor;
     private Class<T> interfaceClass;
-    private Properties properties;
+    private PropertyResolver propertyResolver;
     private RequestPreprocessor requestPreprocessor;
 
     public Class<T> getInterfaceClass() {
@@ -32,8 +31,8 @@ public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
         this.requestor = requestor;
     }
 
-    public void setProperties(Properties properties) {
-        this.properties = properties;
+    public void setPropertyResolver(PropertyResolver propertyResolver) {
+        this.propertyResolver = propertyResolver;
     }
 
     public void setRequestPreprocessor(RequestPreprocessor requestPreprocessor) {
@@ -43,7 +42,7 @@ public class HttpApiProxyFactoryBean<T> implements FactoryBean<T> {
     @Override
     public T getObject() throws Exception {
         if (proxyFactory == null) {
-            proxyFactory = new HttpApiProxyFactory(requestor, properties, requestPreprocessor);
+            proxyFactory = new HttpApiProxyFactory(requestor, propertyResolver, requestPreprocessor);
         }
         return (T) proxyFactory.getProxy(interfaceClass);
     }

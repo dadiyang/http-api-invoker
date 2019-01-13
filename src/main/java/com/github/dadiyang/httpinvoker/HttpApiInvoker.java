@@ -2,6 +2,8 @@ package com.github.dadiyang.httpinvoker;
 
 import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.*;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,7 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final int OK_CODE_L = 200;
     private static final int OK_CODE_H = 300;
     private Requestor requestor;
-    private Properties properties;
+    private PropertyResolver propertyResolver;
     private Class<?> clazz;
     private List<Class<?>> notJsonifyType = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
@@ -42,10 +44,20 @@ public class HttpApiInvoker implements InvocationHandler {
     public HttpApiInvoker(Requestor requestor, Properties properties,
                           Class<?> clazz, RequestPreprocessor requestPreprocessor) {
         this.requestor = requestor == null ? new DefaultHttpRequestor() : requestor;
-        this.properties = properties == null ? System.getProperties() : properties;
+        properties = properties == null ? System.getProperties() : properties;
+        this.propertyResolver = new PropertiesBasePropertyResolver(properties);
         this.requestPreprocessor = requestPreprocessor;
         this.clazz = clazz;
     }
+
+    public HttpApiInvoker(Requestor requestor, PropertyResolver propertyResolver,
+                          Class<?> clazz, RequestPreprocessor requestPreprocessor) {
+        this.requestor = requestor == null ? new DefaultHttpRequestor() : requestor;
+        this.propertyResolver = propertyResolver == null ? new PropertiesBasePropertyResolver(System.getProperties()) : propertyResolver;
+        this.requestPreprocessor = requestPreprocessor;
+        this.clazz = clazz;
+    }
+
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -113,15 +125,7 @@ public class HttpApiInvoker implements InvocationHandler {
         if (log.isDebugEnabled()) {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
-        if (response == null) {
-            return null;
-        }
-        if (response.getStatusCode() < OK_CODE_L || response.getStatusCode() >= OK_CODE_H) {
-            // status code is not 2xx
-            throw new IOException(url + ", statusCode: " + response.getStatusCode() + ", statusMsg: " + response.getStatusMessage());
-        }
-        if (Objects.equals(method.getReturnType(), Void.class)) {
-            // without return type
+        if (isNotNeedReturnValue(method, url, response)) {
             return null;
         }
         if (method.getReturnType() == String.class) {
@@ -140,6 +144,21 @@ public class HttpApiInvoker implements InvocationHandler {
         Type type = method.getGenericReturnType();
         type = type == null ? method.getReturnType() : type;
         return JSON.parseObject(response.getBodyAsBytes(), type);
+    }
+
+    private boolean isNotNeedReturnValue(Method method, String url, HttpResponse response) throws IOException {
+        if (response == null) {
+            return true;
+        }
+        if (response.getStatusCode() < OK_CODE_L || response.getStatusCode() >= OK_CODE_H) {
+            // status code is not 2xx
+            throw new IOException(url + ", statusCode: " + response.getStatusCode() + ", statusMsg: " + response.getStatusMessage());
+        }
+        if (Objects.equals(method.getReturnType(), Void.class)) {
+            // without return type
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -341,13 +360,13 @@ public class HttpApiInvoker implements InvocationHandler {
         Matcher matcher = VARIABLE_PATTERN.matcher(url);
         while (matcher.find()) {
             String key = matcher.group(1);
-            if (!properties.containsKey(key)) {
+            if (propertyResolver == null || !propertyResolver.containsProperty(key)) {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
                 log.warn(msg);
                 throw new IllegalArgumentException(msg);
             }
-            String prop = properties.getProperty(key);
+            String prop = propertyResolver.getProperty(key);
             url = url.replace("${" + key + "}", prop);
         }
         return url;
