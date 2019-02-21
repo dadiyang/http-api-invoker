@@ -17,7 +17,7 @@ import java.util.Map;
  * @author huangxuyang
  * date 2018/11/1
  */
-@HttpApi(prefix = "${api.url.city.host}/city")
+@HttpApi("${api.url.city.host}/city")
 @RetryPolicy
 public interface CityService {
     /**

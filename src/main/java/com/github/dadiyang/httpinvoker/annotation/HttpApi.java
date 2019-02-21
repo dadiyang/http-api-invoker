@@ -18,6 +18,13 @@ import java.lang.annotation.*;
 @Documented
 public @interface HttpApi {
     /**
+     * when  {@link #prefix} is empty, this value will be used
+     *
+     * @return the same as prefix
+     */
+    String value() default "";
+
+    /**
      * @return the prefix
      */
     String prefix() default "";

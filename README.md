@@ -37,7 +37,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.0.9</version>
+    <version>1.1.0</version>
  </dependency>
 ```
 
@@ -214,7 +214,9 @@ public void getProxyTest() throws Exception {
 }
 ```
 
-## 五、扩展：请求前置处理器
+## 五、扩展
+
+### 请求前置处理器
 
 有些情况下，我们需要给所有的请求添加一个请求头、Cookie或者固定的参数，这时候如果我们在接口里添加这些参数会很冗余
 
@@ -234,6 +236,21 @@ public void preprocessorTest() {
 }
 ```
 
+### 响应处理器
+
+接管响应结果的处理逻辑。通过实现 `ResponseProcessor` 接口并在初始化代理工厂时使用，可以拿到响应结果，并根据自己的需求对响应结果进行反序列化等操作
+
+```java
+ResponseProcessor cityResultProcessor = (response, method) -> {
+    ResultBean<City> cityResultBean = JSON.parseObject(response.getBody(), 
+            new TypeReference<ResultBean<City>>() {
+    });
+    return cityResultBean.getData();
+};
+HttpApiProxyFactory factory = new HttpApiProxyFactory(cityResultProcessor);
+CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.class);
+City city = cityServiceWithResponseProcessor.getCity(id);
+```
 # 核心注解
 
 ## @HttpApiScan

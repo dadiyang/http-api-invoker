@@ -4,6 +4,7 @@ import com.github.dadiyang.httpinvoker.annotation.HttpApi;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
+import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -30,10 +31,12 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     private PropertyResolver propertyResolver;
     private Requestor requestor;
     private RequestPreprocessor requestPreprocessor;
+    private ResponseProcessor responseProcessor;
     private BeanDefinitionRegistry registry;
 
     public ClassPathHttpApiScanner(BeanDefinitionRegistry registry, PropertyResolver propertyResolver,
-                                   Requestor requestor, RequestPreprocessor requestPreprocessor) {
+                                   Requestor requestor, RequestPreprocessor requestPreprocessor,
+                                   ResponseProcessor responseProcessor) {
         super(registry, false);
         this.registry = registry;
         this.propertyResolver = propertyResolver;
@@ -42,6 +45,7 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
         addIncludeFilter(new AnnotationTypeFilter(includeAnn));
         this.requestor = requestor;
         this.requestPreprocessor = requestPreprocessor;
+        this.responseProcessor = responseProcessor;
     }
 
     @Override
@@ -105,6 +109,9 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
         }
         if (requestPreprocessor != null) {
             definition.getPropertyValues().add("requestPreprocessor", requestPreprocessor);
+        }
+        if (responseProcessor != null) {
+            definition.getPropertyValues().add("responseProcessor", responseProcessor);
         }
         // 获取bean名，注意：获取 BeanName 要在setBeanClass之前，否则BeanName就会被覆盖
         // caution! we nned to getBeanName first before setBeanClass

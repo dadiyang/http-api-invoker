@@ -7,6 +7,7 @@ import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyRe
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
+import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -95,6 +96,12 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
         } catch (Exception e) {
             logger.debug("RequestPreprocessor bean does not exist" + e.getMessage());
         }
+        ResponseProcessor responseProcessor = null;
+        try {
+            responseProcessor = ctx.getBean(ResponseProcessor.class);
+        } catch (Exception e) {
+            logger.debug("ResponseProcessor bean does not exist" + e.getMessage());
+        }
         PropertyResolver resolver;
         if (properties.size() > 0) {
             MultiSourcePropertyResolver multi = new MultiSourcePropertyResolver();
@@ -106,7 +113,7 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
             // use properties from environment
             resolver = new EnvironmentBasePropertyResolver(ctx.getEnvironment());
         }
-        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, resolver, requestor, requestPreprocessor);
+        ClassPathHttpApiScanner scanner = new ClassPathHttpApiScanner(beanDefinitionRegistry, resolver, requestor, requestPreprocessor, responseProcessor);
         scanner.doScan(basePackages.toArray(new String[]{}));
     }
 

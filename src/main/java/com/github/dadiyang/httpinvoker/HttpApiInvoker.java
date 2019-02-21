@@ -8,7 +8,6 @@ import com.github.dadiyang.httpinvoker.requestor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +27,7 @@ import java.util.regex.Pattern;
  */
 public class HttpApiInvoker implements InvocationHandler {
     private static final Logger log = LoggerFactory.getLogger(HttpApiInvoker.class);
+    private static final ResponseProcessor DEFAULT_RESPONSE_PROCESSOR = new DefaultResponseProcessor();
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{([^/]+?)}");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^/]+?)}");
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z].+://");
@@ -40,21 +40,26 @@ public class HttpApiInvoker implements InvocationHandler {
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Array.class);
     private RequestPreprocessor requestPreprocessor;
+    private ResponseProcessor responseProcessor;
 
     public HttpApiInvoker(Requestor requestor, Properties properties,
-                          Class<?> clazz, RequestPreprocessor requestPreprocessor) {
+                          Class<?> clazz, RequestPreprocessor requestPreprocessor,
+                          ResponseProcessor responseProcessor) {
         this.requestor = requestor == null ? new DefaultHttpRequestor() : requestor;
         properties = properties == null ? System.getProperties() : properties;
         this.propertyResolver = new PropertiesBasePropertyResolver(properties);
         this.requestPreprocessor = requestPreprocessor;
+        this.responseProcessor = responseProcessor;
         this.clazz = clazz;
     }
 
     public HttpApiInvoker(Requestor requestor, PropertyResolver propertyResolver,
-                          Class<?> clazz, RequestPreprocessor requestPreprocessor) {
+                          Class<?> clazz, RequestPreprocessor requestPreprocessor,
+                          ResponseProcessor responseProcessor) {
         this.requestor = requestor == null ? new DefaultHttpRequestor() : requestor;
         this.propertyResolver = propertyResolver == null ? new PropertiesBasePropertyResolver(System.getProperties()) : propertyResolver;
         this.requestPreprocessor = requestPreprocessor;
+        this.responseProcessor = responseProcessor;
         this.clazz = clazz;
     }
 
@@ -79,7 +84,8 @@ public class HttpApiInvoker implements InvocationHandler {
         if (clazz.isAnnotationPresent(HttpApi.class)
                 && !PROTOCOL_PATTERN.matcher(url).find()) {
             HttpApi httpApi = clazz.getAnnotation(HttpApi.class);
-            url = httpApi.prefix() + url;
+            String pre = "".equals(httpApi.prefix()) ? httpApi.value() : httpApi.prefix();
+            url = pre + url;
         }
         // prepare param
         HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
@@ -115,35 +121,26 @@ public class HttpApiInvoker implements InvocationHandler {
         url = fillPathVariables(request.getData(), url, true);
         request.setUrl(url);
         long start = System.currentTimeMillis();
-        HttpResponse response = null;
+        HttpResponse response;
         RetryPolicy retryPolicy = getRetryPolicy(method);
         if (retryPolicy == null) {
             response = requestor.sendRequest(request);
         } else {
             response = retrySendRequest(request, retryPolicy);
         }
-        if (log.isDebugEnabled()) {
-            log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
-        }
         if (isNotNeedReturnValue(method, url, response)) {
             return null;
         }
-        if (method.getReturnType() == String.class) {
-            return response.getBody();
+        Object returnValue;
+        if (responseProcessor != null) {
+            returnValue = responseProcessor.process(response, method);
+        } else {
+            returnValue = DEFAULT_RESPONSE_PROCESSOR.process(response, method);
         }
-        if (method.getReturnType() == byte[].class) {
-            return response.getBodyAsBytes();
+        if (log.isDebugEnabled()) {
+            log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
-        if (method.getReturnType().isAssignableFrom(BufferedInputStream.class)) {
-            return response.getBodyStream();
-        }
-        if (method.getReturnType().isAssignableFrom(response.getClass())) {
-            return response;
-        }
-        // get generic return type
-        Type type = method.getGenericReturnType();
-        type = type == null ? method.getReturnType() : type;
-        return JSON.parseObject(response.getBodyAsBytes(), type);
+        return returnValue;
     }
 
     private boolean isNotNeedReturnValue(Method method, String url, HttpResponse response) throws IOException {
@@ -154,11 +151,7 @@ public class HttpApiInvoker implements InvocationHandler {
             // status code is not 2xx
             throw new IOException(url + ", statusCode: " + response.getStatusCode() + ", statusMsg: " + response.getStatusMessage());
         }
-        if (Objects.equals(method.getReturnType(), Void.class)) {
-            // without return type
-            return true;
-        }
-        return false;
+        return Objects.equals(method.getReturnType(), Void.class);
     }
 
     /**

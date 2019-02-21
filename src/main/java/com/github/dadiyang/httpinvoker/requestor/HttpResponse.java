@@ -13,50 +13,36 @@ import java.util.Map;
 public class HttpResponse {
     /**
      * Get the status code of the response.
-     *
-     * @return status code
      */
     private int statusCode;
 
     /**
      * Get the status message of the response.
-     *
-     * @return status message
      */
     private String statusMessage;
 
     /**
      * Get the character set name of the response, derived from the content-type header.
-     *
-     * @return character set name
      */
     private String charset;
 
     /**
      * Get the response content type (e.g. "text/html");
-     *
-     * @return the response content type
      */
     private String contentType;
 
     /**
      * Get the body of the response as an array of bytes.
-     *
-     * @return body bytes
      */
     private byte[] bodyAsBytes;
     /**
      * Get the body of the response as a plain string.
-     *
-     * @return body
      */
     private String body;
     /**
      * Get the body of the response as a (buffered) InputStream. You should close the input stream when you're done with it.
      * Other body methods (like bufferUp, body, parse, etc) will not work in conjunction with this method.
      * <p>This method is useful for writing large responses to disk, without buffering them completely into memory first.</p>
-     *
-     * @return the response body input stream
      */
     private BufferedInputStream bodyStream;
 

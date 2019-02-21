@@ -1,10 +1,12 @@
 package com.github.dadiyang.httpinvoker.interfaces;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
+import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -220,6 +222,24 @@ public class CityServiceTest {
                 .withHeader("authHeaders", equalTo(authKey))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
         City city = cityServiceWithPreprocessor.getCity(id);
+        assertEquals(mockCity, city);
+    }
+
+    @Test
+    public void responseProcessTest() {
+        ResponseProcessor cityResultProcessor = (response, method) -> {
+            ResultBean<City> cityResultBean = JSON.parseObject(response.getBody(), new TypeReference<ResultBean<City>>() {
+            });
+            return cityResultBean.getData();
+        };
+        HttpApiProxyFactory factory = new HttpApiProxyFactory(cityResultProcessor);
+        CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.class);
+        int id = 1;
+        String uri = "/city/getById?id=" + id;
+        City mockCity = createCity(id);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCity)))));
+        City city = cityServiceWithResponseProcessor.getCity(id);
         assertEquals(mockCity, city);
     }
 }

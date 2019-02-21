@@ -70,6 +70,7 @@ public class CityServiceErrorTest {
             cityService.getAllCities();
             fail("前面应该报异常");
         } catch (Exception e) {
+            e.printStackTrace();
             assertEquals(e.getCause().getClass(), IOException.class);
         }
         long timeConsume = System.currentTimeMillis() - start;
