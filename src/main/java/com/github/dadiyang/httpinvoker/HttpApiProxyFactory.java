@@ -46,6 +46,10 @@ public class HttpApiProxyFactory {
         this(null, properties, requestPreprocessor);
     }
 
+    public HttpApiProxyFactory(Properties properties, ResponseProcessor responseProcessor) {
+        this(properties, null, responseProcessor);
+    }
+
     public HttpApiProxyFactory(Properties properties, RequestPreprocessor requestPreprocessor, ResponseProcessor responseProcessor) {
         this(null, properties, requestPreprocessor, responseProcessor);
     }
@@ -55,7 +59,7 @@ public class HttpApiProxyFactory {
     }
 
     public HttpApiProxyFactory(ResponseProcessor responseProcessor) {
-        this(null, responseProcessor);
+        this(System.getProperties(), responseProcessor);
     }
 
     public HttpApiProxyFactory(RequestPreprocessor requestPreprocessor, ResponseProcessor responseProcessor) {
@@ -73,6 +77,10 @@ public class HttpApiProxyFactory {
 
     public HttpApiProxyFactory(PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor) {
         this(null, propertyResolver, requestPreprocessor);
+    }
+
+    public HttpApiProxyFactory(PropertyResolver propertyResolver, ResponseProcessor responseProcessor) {
+        this(null, propertyResolver, null, responseProcessor);
     }
 
     public HttpApiProxyFactory(PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor, ResponseProcessor responseProcessor) {
@@ -121,7 +129,7 @@ public class HttpApiProxyFactory {
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor) {
-        return newProxy(clazz, null, System.getProperties());
+        return newProxy(clazz, requestor, System.getProperties());
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor, Properties properties) {
@@ -154,6 +162,18 @@ public class HttpApiProxyFactory {
 
     public static <T> T newProxy(Class<T> clazz, PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor) {
         return newProxy(clazz, null, propertyResolver, requestPreprocessor);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, PropertyResolver propertyResolver, RequestPreprocessor requestPreprocessor, ResponseProcessor responseProcessor) {
+        return newProxy(clazz, null, propertyResolver, requestPreprocessor, responseProcessor);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, PropertyResolver propertyResolver, ResponseProcessor responseProcessor) {
+        return newProxy(clazz, null, propertyResolver, null, responseProcessor);
+    }
+
+    public static <T> T newProxy(Class<T> clazz, ResponseProcessor responseProcessor) {
+        return newProxy(clazz, null, new PropertiesBasePropertyResolver(System.getProperties()), null, responseProcessor);
     }
 
     public static <T> T newProxy(Class<T> clazz, Requestor requestor,

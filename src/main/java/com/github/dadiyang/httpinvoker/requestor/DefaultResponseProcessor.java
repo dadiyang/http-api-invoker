@@ -8,7 +8,7 @@ import java.lang.reflect.Type;
 
 /**
  * @author huangxuyang
- * @date 2019/2/21
+ * date 2019/2/21
  */
 public class DefaultResponseProcessor implements ResponseProcessor {
     @Override
