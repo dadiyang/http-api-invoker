@@ -73,33 +73,14 @@ And just use this instance to send a request to the HTTP api:
 ### Spring Integration
 
 #### Configuration
- 
-1. Register HttpApiConfigurer to Spring container by **either** @ComponentScan or @Bean: 
-    1. @ComponentScan
-    
-        `@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})`
-    
-    2. **or** @Bean
-        ```java
-            @Bean
-            public HttpApiConfigurer httpApiConfigurer(){
-                return new HttpApiConfigurer();
-            }
-        ```
-2. Add @HttpApiScan to a @Configuration class for enabling package scanning.
+
+Add @HttpApiScan to a @Configuration class for enabling package scanning.
 
 ```java
 @Configuration
-// scan the package where HttpApiConfigurer included
-@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})
-// enable HttpApiScan, configPaths is optional
-@HttpApiScan(configPaths = "classpath:conf.properties")
+// enable HttpApiScan
+@HttpApiScan
 public class TestApplication {
-//    register HttpApiConfigurer is equivalent to scanning the HttpApiConfigurer's package
-//    @Bean
-//    public HttpApiConfigurer httpApiConfigurer() {
-//        return new HttpApiConfigurer();
-//    }
 }
 ```
  
@@ -129,7 +110,7 @@ Note：path variable using **`{}`** and config using **`${}`**
 
 The framework will get the config property from: 
 
-* **property file** set by configPaths in @HttpApiScan,
+* **property file** set by **configPaths** in @HttpApiScan,
 * **System property**: System.getProperty("property"),
 * and **Spring Environment** in Spring integration scenario.
 

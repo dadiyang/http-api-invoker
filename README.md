@@ -136,42 +136,21 @@ public interface CityService {
 
 ### Spring 集成
 
-#### 添加两个配置
+#### 添加配置
  
- 1. 注册 HttpApiConfigurer 配置器到Spring容器，有两种方式（任选一种即可）：
+像@ComponentScan注解一样，在有 @Configuration 注解的类上加上 @HttpApiScan 注解开启服务接口扫描
     
-    1. 启用包扫描
-    
-        `@ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})`
-    
-    2. 通过@Bean注解方法
-    
-        ```java
-            @Bean
-            public HttpApiConfigurer httpApiConfigurer(){
-                return new HttpApiConfigurer();
-            }
-        ```
- 2. 像@ComponentScan注解一样，在有 @Configuration 注解的类上加上 @HttpApiScan 注解开启服务接口扫描
-    
-    注：configPaths是可选的，用于填充url中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
-    
-    注：与Spring集成且使用自动扫包注入的话，在Spring的Environment中能解析到的配置项，本框架也可以读取到，因此不需要额外的配置
+注：configPaths 配置文件路径是可选的，用于填充 url 中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
 
-    ```java
-    @Configuration
-    // 在包扫描中加上配置器所在的包
-    @ComponentScan(basePackages = {"com.github.dadiyang.httpinvoker.spring"})
-    // 启动服务接口扫描，configPaths是可选的，用于填充url中使用的配置项
-    @HttpApiScan(configPaths = "classpath:conf.properties")
-    public class TestApplication {
-    //    或者使用@Bean注解的方法生成配置器
-    //    @Bean
-    //    public HttpApiConfigurer httpApiConfigurer() {
-    //        return new HttpApiConfigurer();
-    //    }
-    }
-    ```
+注：与Spring集成且使用自动扫包注入的话，在Spring的Environment中能解析到的配置项，本框架也可以读取到，因此不需要额外的配置
+
+```java
+@Configuration
+// 启动服务接口扫描，configPaths是可选的，用于填充url中使用的配置项
+@HttpApiScan(configPaths = "classpath:conf.properties")
+public class TestApplication {
+}
+```
  
 #### 使用 @Autowired 注入
 

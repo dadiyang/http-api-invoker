@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.annotation;
 
 import com.github.dadiyang.httpinvoker.spring.HttpApiConfigurer;
+import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
 
@@ -15,9 +16,10 @@ import java.lang.annotation.*;
  * @author huangxuyang
  * date 2018/11/1
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
 @Documented
+@Target(ElementType.TYPE)
+@Import(HttpApiConfigurer.class)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface HttpApiScan {
     /**
      * base packages, which the http api interfaces contain
