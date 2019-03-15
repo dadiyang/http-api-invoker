@@ -45,9 +45,9 @@
 
 ## 二、定义接口
  
-将请求url与接口方法绑定（支持路径参数，例如 `{cityName}` 和 配置项，例如 `${api.url.city}`）
+将请求url与接口方法绑定（支持路径参数，例如 `{cityName}`，保留路径参数到请求体，例如 `#{id}` 和 配置项，例如 `${api.url.city}`）
 
-注：路径参数占位符 `{}` 和配置项占位符 `${}`
+注：路径参数占位符 `{}` 和配置项占位符 `${}`, 参数被匹配为路径参数时会被移除，若不想删除可以使用 `#{}`
  
 示例：
 
@@ -114,6 +114,11 @@ public interface CityService {
      */
     @HttpReq("/getCityRest/{id}")
     City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
+    /**
+     * #{variable} 表示支持路径参数，且该路径参数不会在填充后被移除，而是在消息体中也带上该参数
+     */
+    @HttpReq(value = "/#{id}", method = "PUT")
+    boolean updateCity(@Param("id") int id, @Param("name") String name);
 }
 ```
  

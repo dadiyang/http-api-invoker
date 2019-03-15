@@ -99,4 +99,11 @@ public interface CityService {
     @HttpReq(value = "/picture/upload", method = "POST")
     String upload(@Param("fileName") String fileName,
                   @Param(value = "media") InputStream in);
+
+    /**
+     * #{variable} 表示支持路径参数，且该路径参数不会在填充后被移除，而是在消息体中也带上该参数
+     */
+    @HttpReq(value = "/#{id}", method = "PUT")
+    boolean updateCity(@Param("id") int id, @Param("name") String name);
+
 }

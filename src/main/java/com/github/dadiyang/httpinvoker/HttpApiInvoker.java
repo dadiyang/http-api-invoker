@@ -30,6 +30,7 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final ResponseProcessor DEFAULT_RESPONSE_PROCESSOR = new DefaultResponseProcessor();
     private static final Pattern PATH_VARIABLE_PATTERN = Pattern.compile("\\{([^/]+?)}");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^/]+?)}");
+    private static final Pattern PATH_NOT_REMOVE_VARIABLE_PATTERN = Pattern.compile("#\\{([^/]+?)}");
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z].+://");
     private static final int OK_CODE_L = 200;
     private static final int OK_CODE_H = 300;
@@ -328,7 +329,21 @@ public class HttpApiInvoker implements InvocationHandler {
      * @throws IllegalArgumentException thrown when the specific param absent
      */
     private String fillPathVariables(Map<String, Object> params, String url, boolean exceptionOnNotProvided) {
-        Matcher matcher = PATH_VARIABLE_PATTERN.matcher(url);
+        url = fillPathVariables(params, url, exceptionOnNotProvided, false);
+        return fillPathVariables(params, url, exceptionOnNotProvided, true);
+    }
+
+    /**
+     * replace the path variable for the specific param, and remove that param from the map
+     *
+     * @param exceptionOnNotProvided if throw an exception on path variable doesn't provided
+     * @param remove                 remove the param if matches the path variable
+     * @return the path variable filled url
+     * @throws IllegalArgumentException thrown when the specific param absent
+     */
+    private String fillPathVariables(Map<String, Object> params, String url, boolean exceptionOnNotProvided, boolean remove) {
+        Pattern pattern = remove ? PATH_VARIABLE_PATTERN : PATH_NOT_REMOVE_VARIABLE_PATTERN;
+        Matcher matcher = pattern.matcher(url);
         while (matcher.find()) {
             String key = matcher.group(1);
             if (params == null
@@ -343,8 +358,14 @@ public class HttpApiInvoker implements InvocationHandler {
                     continue;
                 }
             }
-            String prop = params.remove(key).toString();
-            url = url.replace("{" + key + "}", prop);
+            String prop;
+            if (remove) {
+                prop = params.remove(key).toString();
+                url = url.replace("{" + key + "}", prop);
+            } else {
+                prop = params.get(key).toString();
+                url = url.replace("#{" + key + "}", prop);
+            }
         }
         return url;
     }

@@ -110,6 +110,21 @@ public class CityServiceTest {
     }
 
     @Test
+    public void updateCity() {
+        int id = 1;
+        String name = "北京";
+        String uri = "/city/" + id;
+        Map<String, Object> body = new HashMap<>();
+        body.put("id", id);
+        body.put("name", name);
+        wireMockRule.stubFor(put(urlEqualTo(uri))
+                .withRequestBody(equalToJson(JSON.toJSONString(body)))
+                .willReturn(aResponse().withBody("true")));
+        boolean result = cityService.updateCity(id, name);
+        assertTrue(result);
+    }
+
+    @Test
     public void getCityWithErrHeaders() {
         try {
             int id = 1;

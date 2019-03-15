@@ -102,11 +102,17 @@ Note: if your IDE complain "Could not autowired. no beans of type 'xxx' type fou
 
 ## VI. PLACEHOLDER
 
-Placeholder is supported for read config (using **${}**, like ${api.url.city}) and path variables (using **{}**, like {cityName}). 
+Placeholder is supported for reading config properties (using **${}**, like ${api.url.city}) and path variables (using **{}**, like {cityName}). 
+
+Note: Params matched the path variables will be removed from the request body, but we can use placeholder **#{id}** to keep it.
 
 We can use placeholder in **@HttpApi's prefix and @HttpReq's url**.
 
-Note：path variable using **`{}`** and config using **`${}`**
+Note：
+    
+- path variable using **`{}`**, 
+- path variable and keep it in request params using **`#{}`**,
+- and config using **`${}`**.
 
 The framework will get the config property from: 
 
