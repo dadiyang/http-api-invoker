@@ -78,7 +78,6 @@ Add @HttpApiScan to a @Configuration class for enabling package scanning.
 
 ```java
 @Configuration
-// enable HttpApiScan
 @HttpApiScan
 public class TestApplication {
 }
@@ -100,7 +99,7 @@ public void test() {
 
 Note: if your IDE complain "Could not autowired. no beans of type 'xxx' type found", just ignore that message.
 
-## VI. PLACEHOLDER
+## IV. PLACEHOLDER
 
 Placeholder is supported for reading config properties (using **${}**, like ${api.url.city}) and path variables (using **{}**, like {cityName}). 
 
@@ -120,7 +119,17 @@ The framework will get the config property from:
 * **System property**: System.getProperty("property"),
 * and **Spring Environment** in Spring integration scenario.
 
-## V. EXTENSION
+## V. Retry policy
+
+In some cases, we need to retry a request if network is not available, response status code is not 2xx etc. We can use `@RetryPolicy` annotation to indicate that this method need to be retry when an unexpected condition occur. It can be annotated on method and class. The class's policy prior to the method's. 
+
+* times: try times, 3 by default;
+* retryFor: what exception to retry, IOException by default;
+* retryForStatus: what status code would retry, other than 20x by default;
+* fixedBackOffPeriod: back off strategy, the number of seconds to sleep when retry is required, not to sleep by default.
+
+
+## VI. EXTENSION
 
 ### RequestPreprocessor
 

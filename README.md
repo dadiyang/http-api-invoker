@@ -16,22 +16,14 @@
 4. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
 5. 完善的文档用例和单元测试
 
-# 原理
+# 技术栈
  
-**技术：动态代理 + 反射 + 注解 + 自动包扫描**
- 
-* 使用 @HttpReq **注解** 使接口方法与HTTP服务地址绑定
-* 使用 **动态代理**，生成绑定了 HTTP 请求的接口的代理实现类
-* 通过 **反射** 获取方法参数和返回值信息，根据这些信息处理请求
-* 利用 **包扫描**，注入所有 @HttpApi 注解标注的接口到Spring容器中
- 
-当调用接口的方法的时候框架会完成以下三个步骤
- 
-1. 将方法参数根据规则序列化为所需的请求参数，并且填充路径参数（如果有的话）
-2. 发送请求（使用Jsoup发送）
-3. 将请求响应序列化为方法的返回值（使用fastJson反序列化） 
+* 动态代理
+* 反射
+* 注解
+* 自动包扫描
 
-# 使用
+# 快速开始
  
 ## 一、添加maven依赖
 
@@ -44,133 +36,63 @@
 ```
 
 ## 二、定义接口
- 
-将请求url与接口方法绑定（支持路径参数，例如 `{cityName}`，保留路径参数到请求体，例如 `#{id}` 和 配置项，例如 `${api.url.city}`）
 
-注：路径参数占位符 `{}` 和配置项占位符 `${}`, 参数被匹配为路径参数时会被移除，若不想删除可以使用 `#{}`
- 
-示例：
+假设有一个 GET 请求 `http://localhost:8080/city/allCities` 会响应: 
+
+```json
+[
+    {
+        "id": 1,
+        "name": "beijing"
+    },
+    {
+        "id": 2,
+        "name": "shanghai"
+    }
+]
+```
+
+我们定义一个接口来调用这个请求: 
 
 ```java
-@HttpApi(prefix="${api.url.city}/city")
+@HttpApi
 public interface CityService {
-    /**
-     * 使用URI，会自动添加prefix指定的前缀
-     */
-    @HttpReq("/allCities")
+    @HttpReq("http://localhost:8080/city/allCities")
     List<City> getAllCities();
-    /**
-    * 使用Param注解指定方法参数对应的请求参数名称
-    */
-    @HttpReq("/getById")
-    City getCity(@Param("id") int id);
-    /**
-    * 默认使用GET方法，可以通过method指定请求方式
-    * 如果是集合类或数组的参数数据会直接当成请求体直接发送
-    * 
-    * RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
-    * 重试策略: 当服务器返回50x状态码时进行重试，具体请看 RetryPolicy 注解说明 
-    */
-    @HttpReq(value = "/save", method = "POST")
-    @RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
-    boolean saveCities(List<City> cities);
-    /**
-    * 使用完整的路径，不会添加前缀
-    */
-    @HttpReq(value = "http://localhost:8080/city/saveCity", method = "POST")
-    boolean saveCity(@Param("id") String id, @Param("name") String name, @Param("wubaId") int wubaId);
-    /**
-     * 支持路径参数
-     */
-    @HttpReq("/getCityRest/{id}")
-    City getCityRest(@Param("id") int id);
-    /**
-     * 可以通过返回 byte[]或 InputStream 来下载资源
-     * @return 调用接口返回的字节数组
-     */
-    @HttpReq("/picture/landscape.png")
-    byte[] download();
-    /**
-     * 上传输入流
-     * @param fileName 文件名
-     * @param in 输入流
-     */
-    @HttpReq(value="/picture/upload", method = "POST")
-    void upload(@Param("fileName") String fileName,
-                     @Param(value = "media", isBody = true) InputStream in);
-    /**
-     * 上传文件
-     * @param file 文件
-     */
-    @HttpReq(value="/picture/upload", method = "POST")
-    void upload(@Param(value = "media", isBody = true) File file);
-    /**
-     * 带正确请求头的方法
-     */
-    @HttpReq("/getCityRest/{id}")
-    City getCityWithHeaders(@Param("id") int id, @Headers Map<String, String> headers);
-    /**
-     * 带cookie的方法
-     */
-    @HttpReq("/getCityRest/{id}")
-    City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
-    /**
-     * #{variable} 表示支持路径参数，且该路径参数不会在填充后被移除，而是在消息体中也带上该参数
-     */
-    @HttpReq(value = "/#{id}", method = "PUT")
-    boolean updateCity(@Param("id") int id, @Param("name") String name);
 }
 ```
- 
-## 三、获取代理类
- 
- 你唯一需要做的就是定义上面的接口，然后在使用的时候就可以通过工厂类获取接口的代理实现类了。
- 
- 如果你使用Spring，那简单地配置一下就可以使用@Autowired注解直接注入你的接口实现了
- 
-### 工厂方法示例：
- 
- 使用 HttpApiProxyFactory.getProxy(接口.class) 获取接口代理类
- 
- ```java
- Properties properties = new Properties();
- properties.load(getClass().getClassLoader().getResourceAsStream("conf.properties"));
- // properties 是可选的，若不提供则默认使用 System.getProperties() 提供的配置
- CityService service = new HttpApiProxyFactory(properties).getProxy(CityService.class);
- ```
+
+注：这里只展示最简单的使用方法，完整功能的示例可查看[单元测试中的CityService接口](./src/test/java/com/github/dadiyang/httpinvoker/interfaces/CityService.java)
+
+## 三、获取代理
+
+获取代理有两种方式，一种是直接通过工厂方法获取，一种是集成Spring通过 @Autowired 注入
+
+### HttpApiProxyFactory
+
+通过调用 `HttpApiProxyFactory.getProxy` 方法获取，如：
+
+```java
+CityService cityService = HttpApiProxyFactory.getProxy(CityService.class);
+List<City> cities = cityService.getAllCities()
+System.out.println(cities);
+```
 
 ### Spring 集成
 
-#### 添加配置
- 
-像@ComponentScan注解一样，在有 @Configuration 注解的类上加上 @HttpApiScan 注解开启服务接口扫描
-    
-注：configPaths 配置文件路径是可选的，用于填充 url 中使用的配置占位符，如 ${api.url} 对应 api.url 配置项
+#### 配置开启 HTTP API 扫描
 
-注：与Spring集成且使用自动扫包注入的话，在Spring的Environment中能解析到的配置项，本框架也可以读取到，因此不需要额外的配置
+只需添加`@HttpApiScan`到任意一个 `@Configuration` 的类上即可：
 
 ```java
 @Configuration
-// 启动服务接口扫描，configPaths是可选的，用于填充url中使用的配置项
-@HttpApiScan(configPaths = "classpath:conf.properties")
+@HttpApiScan
 public class TestApplication {
 }
 ```
- 
-#### 使用 @Autowired 注入
+**注**：加上 @HttpApiScan 后会自动扫描这个 Configuration 类所在的包及其子包中所有带有 @HttpApi 注解的接口并生成代理类注册到Spring容器中。你也可以通过设置 `@HttpApiScan` 中的 value 值来指定要扫描的包。
 
-因为是动态代理生成并注册到Spring容器中的，所以IDE可能会警告 "Could not autowired. no beans of type 'xxx' type found." 忽略即可。
-
-```java
-@Autowired
-private CityService cityService;
-```
-
-## 四、使用示例
-
-可查看项目单元测试HttpApiInvokerTest和HttpApiInvokerSpringTest两个类
-
-### Spring集成使用
+#### @Autowired 注入接口代理
 
 ```java
 @Autowired
@@ -178,29 +100,36 @@ private CityService cityService;
 
 public void test() {
     List<City> cities = cityService.getAllCities();
-    for (City city : cities) {
-        System.out.println(city);
-    }
-}
-
-```
-
-### 工厂方式使用
-
-```java
-public void getProxyTest() throws Exception {
-     CityService service = HttpApiProxyFactory.newProxy(CityService.class);
-//   或者new一个新的proxyFactory，重用这个factory可以使用相同的配置创建代理
-//   HttpApiProxyFactory factory = new HttpApiProxyFactory(...);
-//   CityService service = factory.getProxy(CityService.class);
-     List<City> cities = service.getAllCities();
-     for (City city : cities) {
-         System.out.println(city);
-     }
+    System.out.println(cities);
 }
 ```
 
-## 五、扩展
+**注**：因为是动态代理生成并注册到Spring容器中的，所以IDE可能会警告 "Could not autowired. no beans of type 'xxx' type found." 忽略即可。
+
+## 四、占位符
+
+在 `@HttpApi` 注解的 prefix 和 `@HttpReq` 注解的 url 中都支持配置和路径参数占位符
+
+* 配置占位符：${}，如 ${api.url.city}
+* 路径参数占位符：{}，如 {cityId}
+* 保留到请求参数中的路径参数占位符：#{}，如 #{cityId}
+
+配置占位符中的配置项将会从以下几个来源中获取：
+
+* 在 `@HttpApiScan` 中设置的 **configPaths** 对应的配置文件中
+* **系统配置**，即 System.getProperty("property")
+* 与Spring集成时，也会从**Spring Environment**中获取
+
+## 五、重试策略
+
+当调用接口失败时，可能是网络不通或者接口返回的状态码不是2xx时，我们可能需要重试几次。这种情况下，我们可以使用`@RetryPolicy`注解。这个注解可以打在类和方法上，方法上的策略优先于类上的。支持的参数如下：
+
+* times 尝试调用次数，默认 3 次
+* retryFor 当发生该异常时才重试，默认只在 IOException 时触发重试
+* retryForStatus 当服务器返回的状态码为某一类型时触发，默认只要服务器返回非 20x 的状态都进行重试
+* fixedBackOffPeriod 退避策略，当需要进行重试时休眠的秒数，默认不休眠
+
+## 六、扩展
 
 ### 请求前置处理器
 
