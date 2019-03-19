@@ -12,7 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
+import static com.github.dadiyang.httpinvoker.util.CheckUtils.isCollection;
+import static com.github.dadiyang.httpinvoker.util.CheckUtils.toMapStringString;
 import static org.jsoup.Connection.Method;
 import static org.jsoup.Connection.Response;
 
@@ -29,6 +32,8 @@ public class DefaultHttpRequestor implements Requestor {
     private static final String FILE_NAME = "fileName";
     private static final String DEFAULT_UPLOAD_FORM_KEY = "media";
     private static final String FORM_KEY = "formKey";
+    private static final String CONTENT_TYPE = "Content-Type";
+    private static final String APPLICATION_JSON = "application/json";
 
     /**
      * {@inheritDoc}
@@ -47,19 +52,19 @@ public class DefaultHttpRequestor implements Requestor {
             Connection conn = Jsoup.connect(fullUrl)
                     .method(m)
                     .timeout(timeout)
-                    .header("Content-Type", "application/json; charset=utf-8")
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
+            setContentType(request, conn);
             response = conn.execute();
         } else {
             Connection conn = Jsoup.connect(url)
                     .method(m)
                     .timeout(timeout)
-                    .header("Content-Type", "application/json; charset=utf-8")
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
+            setContentType(request, conn);
             Map<String, Object> data = request.getData();
             // body first
             if (request.getBody() != null) {
@@ -69,24 +74,43 @@ public class DefaultHttpRequestor implements Requestor {
                     log.debug("upload file {} request to {} ", m, url);
                     response = uploadFile(request);
                 } else {
-                    // else the serialize the bodyParam as requestBody
-                    String requestBody = JSON.toJSONString(bodyParam);
-                    log.debug("send {} request to {} with request body {}", m, url, requestBody);
-                    response = conn.requestBody(requestBody)
-                            .execute();
+                    if (useJson(request, bodyParam)) {
+                        response = conn.requestBody(JSON.toJSONString(bodyParam)).execute();
+                    } else {
+                        Map<String, String> map = toMapStringString(bodyParam);
+                        response = conn.data(map).execute();
+                    }
                 }
             } else if (data == null
                     || data.isEmpty()) {
                 log.debug("send {} request to {}", m, url);
                 response = conn.execute();
             } else {
-                String requestBody = JSON.toJSONString(data);
-                log.debug("send {} request to {} with request body {}", m, url, requestBody);
-                response = conn.requestBody(requestBody)
-                        .execute();
+                if (useJson(request, data)) {
+                    response = conn.requestBody(JSON.toJSONString(data)).execute();
+                } else {
+                    Map<String, String> map = toMapStringString(data);
+                    response = conn.data(map).execute();
+                }
             }
         }
         return new JsoupHttpResponse(response);
+    }
+
+    private void setContentType(HttpRequest request, Connection conn) {
+        // set a default Content-Type if not provided
+        if (request.getHeaders() == null || !request.getHeaders().containsKey(CONTENT_TYPE)) {
+            conn.header(CONTENT_TYPE, APPLICATION_JSON);
+        }
+    }
+
+    /**
+     * either param is a collection or Content-Type absence or equals to APPLICATION_JSON
+     */
+    private boolean useJson(HttpRequest request, Object param) {
+        // collection can only be send by json currently
+        return isCollection(param) || request.getHeaders() == null
+                || Objects.equals(request.getHeaders().get(CONTENT_TYPE), APPLICATION_JSON);
     }
 
     private void addHeadersAndCookies(HttpRequest request, Connection conn) {

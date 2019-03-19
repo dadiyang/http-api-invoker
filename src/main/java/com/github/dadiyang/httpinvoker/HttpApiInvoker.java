@@ -17,6 +17,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.github.dadiyang.httpinvoker.util.CheckUtils.isCollection;
+
 /**
  * an InvocationHandler which request the url that the annotation's value attribute specify when the annotated method is invoked.
  * <p>
@@ -114,6 +116,11 @@ public class HttpApiInvoker implements InvocationHandler {
             url = fillPathVariables(params, url, false);
             request.setUrl(url);
             request.setData(params);
+        }
+        if (clazz.isAnnotationPresent(Form.class)
+                || method.isAnnotationPresent(Form.class)) {
+            // a form request
+            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
         }
         if (requestPreprocessor != null) {
             requestPreprocessor.process(request);
@@ -232,14 +239,7 @@ public class HttpApiInvoker implements InvocationHandler {
         return params;
     }
 
-    private boolean isCollection(Object arg) {
-        if (arg == null) {
-            return false;
-        }
-        return arg.getClass().isArray()
-                || arg instanceof Collection
-                || arg instanceof Array;
-    }
+
 
     /**
      * parse arguments annotated by @Param annotation to a map

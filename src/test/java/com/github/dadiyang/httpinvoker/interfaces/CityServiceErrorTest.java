@@ -92,6 +92,7 @@ public class CityServiceErrorTest {
             cityService.saveCities(mockCities);
             fail("前面应该报异常");
         } catch (Exception e) {
+            e.printStackTrace();
             assertEquals(e.getCause().getClass(), IOException.class);
         }
         // 前面报只对 50x 的错误尝试 2 次
