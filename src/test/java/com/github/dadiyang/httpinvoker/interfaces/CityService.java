@@ -106,4 +106,11 @@ public interface CityService {
     @HttpReq(value = "/#{id}", method = "PUT")
     boolean updateCity(@Param("id") int id, @Param("name") String name);
 
+    /**
+     * 模拟表单提交 application/x-www-form-urlencoded
+     */
+    @Form
+    @HttpReq(value = "/saveCity", method = "POST")
+    boolean saveCityForm(City city);
+
 }

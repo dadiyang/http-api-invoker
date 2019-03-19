@@ -7,6 +7,7 @@ import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
+import com.github.dadiyang.httpinvoker.util.CityUtil;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -200,6 +201,21 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody("true")));
         boolean exists = cityService.hasCity(mockCity);
         assertTrue(exists);
+    }
+
+    /**
+     * 测试表单提交
+     */
+    @Test
+    public void saveCityForm() throws UnsupportedEncodingException {
+        City city = CityUtil.createCity(1);
+        String uri = "/city/saveCity";
+        wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                .withRequestBody(equalTo("name=" + URLEncoder.encode(city.getName(), "utf-8") + "&id=" + city.getId()))
+                .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                .willReturn(aResponse().withBody("true")));
+        boolean rs = cityService.saveCityForm(city);
+        assertTrue(rs);
     }
 
     @Test
