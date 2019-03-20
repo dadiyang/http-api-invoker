@@ -14,8 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.github.dadiyang.httpinvoker.util.ParamUtils.isCollection;
-import static com.github.dadiyang.httpinvoker.util.ParamUtils.toMapStringString;
+import static com.github.dadiyang.httpinvoker.util.ParamUtils.*;
 import static org.jsoup.Connection.Method;
 import static org.jsoup.Connection.Response;
 
@@ -46,15 +45,14 @@ public class DefaultHttpRequestor implements Requestor {
         String url = request.getUrl();
         int timeout = request.getTimeout();
         if (!m.hasBody()) {
-            log.debug("send {} request to {}", m, request.getUrl());
-            Connection conn = Jsoup.connect(request.getUrl())
+            String qs = toQueryString(request.getData());
+            String fullUrl = request.getUrl() + qs;
+            log.debug("send {} request to {}", m, fullUrl);
+            Connection conn = Jsoup.connect(fullUrl)
                     .method(m)
                     .timeout(timeout)
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
-            if (request.getData() != null) {
-                conn.data(toMapStringString(request.getData()));
-            }
             addHeadersAndCookies(request, conn);
             setContentType(request, conn);
             response = conn.execute();

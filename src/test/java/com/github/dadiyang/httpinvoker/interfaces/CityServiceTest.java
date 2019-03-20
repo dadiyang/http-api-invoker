@@ -221,7 +221,9 @@ public class CityServiceTest {
         List<Integer> cityIds = Arrays.asList(1, 2, 3);
         List<City> rs = CityUtil.getCities(cityIds);
         wireMockRule.stubFor(get(urlPathEqualTo(uri))
-                .withQueryParam("ids", equalTo("[1,2,3]"))
+                .withQueryParam("id", equalTo("1"))
+                .withQueryParam("id", equalTo("2"))
+                .withQueryParam("id", equalTo("3"))
                 .withHeader("Content-Type", equalTo("application/json"))
                 .willReturn(aResponse().withBody(JSON.toJSONString(rs))));
         List<City> cities = cityService.getCities(cityIds);

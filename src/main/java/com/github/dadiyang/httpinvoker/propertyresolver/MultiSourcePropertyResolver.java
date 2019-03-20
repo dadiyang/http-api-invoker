@@ -18,6 +18,7 @@ public class MultiSourcePropertyResolver implements PropertyResolver {
      * Note that a new HashSet will be use,
      * so if you want to add a new Resolver, call {@link #addPropertyResolver} please
      *
+     * @param resolvers resolvers list
      * @throws IllegalArgumentException if param resolvers is null
      */
     public MultiSourcePropertyResolver(Set<PropertyResolver> resolvers) {
@@ -33,6 +34,8 @@ public class MultiSourcePropertyResolver implements PropertyResolver {
 
     /**
      * Add a new PropertyResolver;
+     *
+     * @param resolver a propertyResolver
      */
     public void addPropertyResolver(PropertyResolver resolver) {
         this.resolvers.add(resolver);
