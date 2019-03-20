@@ -51,6 +51,8 @@ public class DefaultHttpRequestor implements Requestor {
             Connection conn = Jsoup.connect(fullUrl)
                     .method(m)
                     .timeout(timeout)
+                    // unlimited size
+                    .maxBodySize(0)
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
@@ -60,6 +62,8 @@ public class DefaultHttpRequestor implements Requestor {
             Connection conn = Jsoup.connect(url)
                     .method(m)
                     .timeout(timeout)
+                    // unlimited size
+                    .maxBodySize(0)
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
             addHeadersAndCookies(request, conn);
@@ -150,6 +154,8 @@ public class DefaultHttpRequestor implements Requestor {
         conn.method(Method.POST)
                 .timeout(request.getTimeout())
                 .ignoreHttpErrors(true)
+                // unlimited size
+                .maxBodySize(0)
                 .ignoreContentType(true);
         addHeadersAndCookies(request, conn);
         String fileName = "fileName";
