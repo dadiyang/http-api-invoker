@@ -113,4 +113,9 @@ public interface CityService {
     @HttpReq(value = "/saveCity", method = "POST")
     boolean saveCityForm(City city);
 
+    /**
+     * 使用Param注解指定方法参数对应的请求参数名称
+     */
+    @HttpReq("/getByIds")
+    List<City> getCities(@Param("ids") List<Integer> ids);
 }

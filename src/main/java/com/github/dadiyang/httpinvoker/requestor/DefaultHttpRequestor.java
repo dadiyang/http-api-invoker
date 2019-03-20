@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.github.dadiyang.httpinvoker.util.CheckUtils.isCollection;
-import static com.github.dadiyang.httpinvoker.util.CheckUtils.toMapStringString;
+import static com.github.dadiyang.httpinvoker.util.ParamUtils.isCollection;
+import static com.github.dadiyang.httpinvoker.util.ParamUtils.toMapStringString;
 import static org.jsoup.Connection.Method;
 import static org.jsoup.Connection.Response;
 
@@ -46,14 +46,15 @@ public class DefaultHttpRequestor implements Requestor {
         String url = request.getUrl();
         int timeout = request.getTimeout();
         if (!m.hasBody()) {
-            // to those method without body such as GET/DELETE we use QueryString
-            String fullUrl = request.getUrl() + queryStringify(request.getData());
-            log.debug("send {} request to {}", m, fullUrl);
-            Connection conn = Jsoup.connect(fullUrl)
+            log.debug("send {} request to {}", m, request.getUrl());
+            Connection conn = Jsoup.connect(request.getUrl())
                     .method(m)
                     .timeout(timeout)
                     .ignoreContentType(true)
                     .ignoreHttpErrors(true);
+            if (request.getData() != null) {
+                conn.data(toMapStringString(request.getData()));
+            }
             addHeadersAndCookies(request, conn);
             setContentType(request, conn);
             response = conn.execute();
@@ -170,22 +171,5 @@ public class DefaultHttpRequestor implements Requestor {
         }
         conn.data(formKey, fileName, in);
         return conn.execute();
-    }
-
-    /**
-     * query stringify the object
-     *
-     * @param map the param map
-     * @return a query string represent the map
-     */
-    private String queryStringify(Map<String, Object> map) {
-        if (map == null || map.isEmpty()) {
-            return "";
-        }
-        StringBuilder builder = new StringBuilder("?");
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            builder.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
-        }
-        return builder.toString().substring(0, builder.length() - 1);
     }
 }

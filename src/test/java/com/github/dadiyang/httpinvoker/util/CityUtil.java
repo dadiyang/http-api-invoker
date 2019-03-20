@@ -3,6 +3,7 @@ package com.github.dadiyang.httpinvoker.util;
 import com.github.dadiyang.httpinvoker.entity.City;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -24,6 +25,17 @@ public class CityUtil {
             }
         }
         throw new IllegalArgumentException("city not exists, id:" + id);
+    }
+
+    public static List<City> getCities(List<Integer> ids) {
+        List<City> cities = createCities();
+        List<City> rs = new LinkedList<>();
+        for (City city : cities) {
+            if (ids.contains(city.getId())) {
+                rs.add(city);
+            }
+        }
+        return rs;
     }
 
     public static City createCity(String name) {

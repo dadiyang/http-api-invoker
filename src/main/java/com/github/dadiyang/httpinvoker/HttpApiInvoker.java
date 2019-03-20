@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.github.dadiyang.httpinvoker.util.CheckUtils.isCollection;
+import static com.github.dadiyang.httpinvoker.util.ParamUtils.isCollection;
 
 /**
  * an InvocationHandler which request the url that the annotation's value attribute specify when the annotated method is invoked.

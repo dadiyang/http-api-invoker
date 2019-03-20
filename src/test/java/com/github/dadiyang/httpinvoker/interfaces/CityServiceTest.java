@@ -18,10 +18,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCity;
@@ -216,6 +213,20 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody("true")));
         boolean rs = cityService.saveCityForm(city);
         assertTrue(rs);
+    }
+
+    @Test
+    public void getCities() {
+        String uri = "/city/getByIds";
+        List<Integer> cityIds = Arrays.asList(1, 2, 3);
+        List<City> rs = CityUtil.getCities(cityIds);
+        wireMockRule.stubFor(get(urlPathEqualTo(uri))
+                .withQueryParam("ids", equalTo("[1,2,3]"))
+                .withHeader("Content-Type", equalTo("application/json"))
+                .willReturn(aResponse().withBody(JSON.toJSONString(rs))));
+        List<City> cities = cityService.getCities(cityIds);
+        assertEquals(rs, cities);
+        System.out.println(cities);
     }
 
     @Test
