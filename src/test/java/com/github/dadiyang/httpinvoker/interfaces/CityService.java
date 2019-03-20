@@ -30,7 +30,7 @@ public interface CityService {
     /**
      * 使用Param注解指定方法参数对应的请求参数名称
      */
-    @HttpReq("/getById")
+    @HttpReq("${api.url.city.host2}/city/getById")
     City getCity(@Param("id") int id);
 
     /**

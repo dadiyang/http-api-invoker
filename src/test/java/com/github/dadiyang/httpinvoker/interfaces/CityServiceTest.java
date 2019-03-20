@@ -36,6 +36,7 @@ public class CityServiceTest {
     @Before
     public void setUp() throws Exception {
         System.setProperty("api.url.city.host", "http://localhost:" + PORT);
+        System.setProperty("api.url.city.host2", "http://localhost:" + PORT);
         HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory();
         cityService = httpApiProxyFactory.getProxy(CityService.class);
         authKey = UUID.randomUUID().toString();

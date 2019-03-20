@@ -350,7 +350,7 @@ public class HttpApiInvoker implements InvocationHandler {
                     || !params.containsKey(key)
                     || params.get(key) == null) {
                 // path variable must be provided
-                String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
+                String msg = "the url [" + url + "] needs a variable: [" + key + "], but not provided.";
                 log.warn(msg);
                 if (exceptionOnNotProvided) {
                     throw new IllegalArgumentException(msg);
@@ -376,7 +376,7 @@ public class HttpApiInvoker implements InvocationHandler {
             String key = matcher.group(1);
             if (propertyResolver == null || !propertyResolver.containsProperty(key)) {
                 // path variable must be provided
-                String msg = "the url [" + url + "] needs a variable: [" + key + "], but wasn't provided.";
+                String msg = "the url [" + url + "] needs a variable: [" + key + "], but not provided.";
                 log.warn(msg);
                 throw new IllegalArgumentException(msg);
             }

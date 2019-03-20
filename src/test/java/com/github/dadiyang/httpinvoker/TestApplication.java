@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@HttpApiScan
-@PropertySource("classpath:conf.properties")
+@HttpApiScan(configPaths = "classpath:conf.properties")
+@PropertySource("classpath:conf2.properties")
 public class TestApplication {
 
     @Bean

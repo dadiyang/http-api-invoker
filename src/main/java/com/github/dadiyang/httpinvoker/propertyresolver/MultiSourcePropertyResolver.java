@@ -1,7 +1,7 @@
 package com.github.dadiyang.httpinvoker.propertyresolver;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * A PropertyResolver which includes a set of PropertyResolvers
@@ -25,11 +25,11 @@ public class MultiSourcePropertyResolver implements PropertyResolver {
         if (resolvers == null) {
             throw new IllegalArgumentException("resolvers must not be null");
         }
-        this.resolvers = new TreeSet<>(resolvers);
+        this.resolvers = new LinkedHashSet<>(resolvers);
     }
 
     public MultiSourcePropertyResolver() {
-        resolvers = new TreeSet<>();
+        resolvers = new LinkedHashSet<>();
     }
 
     /**
