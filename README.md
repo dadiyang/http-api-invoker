@@ -31,7 +31,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
  </dependency>
 ```
 
@@ -195,6 +195,10 @@ isBody: 指定是否将该参数的所有字段都做为单独的参数
 ## @Cookies
 
 指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+## @Form
+
+指定方法或类中的所有方法都为 Form 表单形式提交，即 Content-Type 为 application/x-www-form-urlencoded
 
 ## @RetryPolicy 重试策略
 

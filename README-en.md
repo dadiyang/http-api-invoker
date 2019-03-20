@@ -29,7 +29,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
  </dependency>
 ```
 
@@ -206,6 +206,10 @@ Headers of the request, must be `Map<String, String>` otherwise an `IllegalArgum
 ## @Cookies
 
 Cookies of the request, must be `Map<String, String>` otherwise an `IllegalArgumentException` will be thrown.
+
+## @Form
+
+indicate a method or all methods in a class would send a form request, Content-Type of application/x-www-form-urlencoded.
 
 ## @RetryPolicy
 
