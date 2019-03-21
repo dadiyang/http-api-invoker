@@ -159,7 +159,7 @@ public class HttpApiInvoker implements InvocationHandler {
             // status code is not 2xx
             throw new IOException(url + ", statusCode: " + response.getStatusCode() + ", statusMsg: " + response.getStatusMessage());
         }
-        return Objects.equals(method.getReturnType(), Void.class);
+        return false;
     }
 
     /**
@@ -238,7 +238,6 @@ public class HttpApiInvoker implements InvocationHandler {
         }
         return params;
     }
-
 
 
     /**

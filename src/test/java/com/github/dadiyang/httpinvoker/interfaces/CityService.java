@@ -41,6 +41,12 @@ public interface CityService {
     boolean saveCities(List<City> cities);
 
     /**
+     * 测试无需返回值的情况
+     */
+    @HttpReq(value = "/{id}", method = "DELETE")
+    void deleteCity(@Param("id") int id);
+
+    /**
      * 默认使用GET方法，可以通过method指定请求方式
      */
     @HttpReq(value = "/saveCity", method = "POST")

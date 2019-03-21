@@ -233,6 +233,17 @@ public class CityServiceTest {
     }
 
     @Test
+    public void deleteCity() {
+        int id = 1;
+        String uri = "/city/" + id;
+        List<Integer> cityIds = Arrays.asList(1, 2, 3);
+        List<City> rs = CityUtil.getCities(cityIds);
+        wireMockRule.stubFor(delete(urlPathEqualTo(uri))
+                .willReturn(ok()));
+        cityService.deleteCity(id);
+    }
+
+    @Test
     public void upload() {
         String uri = "/city/picture/upload";
         String randomName = UUID.randomUUID().toString();
