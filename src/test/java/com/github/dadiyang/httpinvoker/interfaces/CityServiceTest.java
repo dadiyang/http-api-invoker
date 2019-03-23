@@ -7,6 +7,7 @@ import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
+import com.github.dadiyang.httpinvoker.requestor.ResultBeanResponseProcessor;
 import com.github.dadiyang.httpinvoker.util.CityUtil;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
@@ -297,5 +298,30 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCity)))));
         City city = cityServiceWithResponseProcessor.getCity(id);
         assertEquals(mockCity, city);
+    }
+
+
+    @Test
+    public void getAllCitiesWithResultBeanResponseProcessor() throws NoSuchMethodException {
+        List<City> mockCities = createCities();
+        String uri = "/city/allCities";
+        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCities)))));
+        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
+        List<City> cityList = cityServiceWithResultBeanResponseProcessor.getAllCities();
+        assertTrue(mockCities.containsAll(cityList));
+        assertTrue(cityList.containsAll(mockCities));
+    }
+
+    @Test
+    public void getCityWithResultBean() throws UnsupportedEncodingException {
+        String cityName = "北京";
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        City city = createCity(cityName);
+        ResultBean<City> mockCityResult = new ResultBean<>(1, city);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
+        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
+        City result = cityServiceWithResultBeanResponseProcessor.getCityWithResultBean(cityName);
+        assertEquals(city, result);
     }
 }

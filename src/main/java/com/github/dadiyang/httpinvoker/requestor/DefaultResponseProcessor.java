@@ -19,8 +19,12 @@ public class DefaultResponseProcessor implements ResponseProcessor {
                 || Objects.equals(method.getReturnType(), void.class)) {
             return null;
         }
+        String body = response.getBody();
+        if (body == null || body.trim().isEmpty()) {
+            return null;
+        }
         if (method.getReturnType() == String.class) {
-            return response.getBody();
+            return body;
         }
         if (method.getReturnType() == byte[].class) {
             return response.getBodyAsBytes();

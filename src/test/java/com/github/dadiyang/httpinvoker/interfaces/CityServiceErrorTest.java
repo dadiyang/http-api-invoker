@@ -1,7 +1,10 @@
 package com.github.dadiyang.httpinvoker.interfaces;
 
+import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
+import com.github.dadiyang.httpinvoker.entity.ResultBean;
+import com.github.dadiyang.httpinvoker.requestor.ResultBeanResponseProcessor;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import org.junit.Before;
@@ -9,14 +12,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
+import static com.github.dadiyang.httpinvoker.util.CityUtil.createCity;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * 对一些错误值进行测试
@@ -109,5 +114,26 @@ public class CityServiceErrorTest {
         }
         // 前面报错后应该不重试
         wireMockRule.verify(1, RequestPatternBuilder.allRequests().withUrl(uri));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void getAllCitiesWithResultBeanResponseProcessor() {
+        List<City> mockCities = createCities();
+        String uri = "/city/allCities";
+        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(1, mockCities)))));
+        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
+        cityServiceWithResultBeanResponseProcessor.getAllCities();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void getCityWithResultBean() throws UnsupportedEncodingException {
+        String cityName = "北京";
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        City city = createCity(cityName);
+        ResultBean<City> mockCityResult = new ResultBean<>(0, city);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
+        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
+        cityServiceWithResultBeanResponseProcessor.getCityWithResultBean(cityName);
     }
 }

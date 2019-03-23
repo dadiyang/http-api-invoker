@@ -31,7 +31,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.4</version>
  </dependency>
 ```
 

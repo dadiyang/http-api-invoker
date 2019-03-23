@@ -124,4 +124,13 @@ public interface CityService {
      */
     @HttpReq("/getByIds")
     List<City> getCities(@Param("id") List<Integer> ids);
+
+    /**
+     * 获取城市
+     * <p>
+     * 用于测试返回值为 resultBean 的场景，而且正确的 code = 1
+     */
+    @ExpectedCode(1)
+    @HttpReq("/getCityByName")
+    City getCityWithResultBean(@Param("name") String name);
 }
