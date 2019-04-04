@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.TestApplication;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +27,7 @@ public class CityServiceSpringTest {
 
     @Test
     public void getCity() {
+        System.out.println(cityService.toString());
         int id = 1;
         String uri = "/city/getById?id=" + id;
         City mockCity = createCity(id);

@@ -36,6 +36,8 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z].+://");
     private static final int OK_CODE_L = 200;
     private static final int OK_CODE_H = 300;
+    private static final String HTTP_API_PREFIX = "$HttpApi$";
+    private static final String TO_STRING = "toString";
     private Requestor requestor;
     private PropertyResolver propertyResolver;
     private Class<?> clazz;
@@ -70,7 +72,11 @@ public class HttpApiInvoker implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (!method.isAnnotationPresent(HttpReq.class)) {
-            // those Object method invoke 'this' method
+            // toString method with a specific prefix
+            if (TO_STRING.equals(method.getName()) && method.getParameterCount() == 0) {
+                return HTTP_API_PREFIX + this;
+            }
+            // those Object's methods invoke 'this' method
             if (this.getClass().getMethod(method.getName(), method.getParameterTypes()) != null) {
                 return method.invoke(this, args);
             }

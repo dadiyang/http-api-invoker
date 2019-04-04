@@ -11,6 +11,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
@@ -26,6 +27,7 @@ import java.util.Set;
  * date 2018/11/1
  */
 public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
+    private static final String HTTP_API_PREFIX = "$HttpApi$";
     private Class<? extends FactoryBean> factoryBean;
     private Class<? extends Annotation> includeAnn;
     private PropertyResolver propertyResolver;
@@ -73,7 +75,12 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
         // Sometimes, the package scan will be conflicted with MyBatis
         // so the existing is not the expected one, we remove it.
         if (this.registry.containsBeanDefinition(beanName)) {
-            logger.warn("HttpApi bean [" + beanName + "] exists, we remove it, so that we can generate a new bean.");
+            // an HttpApi bean exists, we ignore the others.
+            if (isHttpApiBean(beanName)) {
+                logger.info("an HttpApi bean [" + beanName + "] exists, we ignore the others");
+                return false;
+            }
+            logger.warn("an not HttpApi bean named [" + beanName + "] exists, we remove it, so that we can generate a new bean.");
             registry.removeBeanDefinition(beanName);
         }
         if (super.checkCandidate(beanName, beanDefinition)) {
@@ -84,6 +91,16 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
                     + ". Bean already defined with the same name!");
             return false;
         }
+    }
+
+    private boolean isHttpApiBean(String beanName) {
+        if (registry instanceof DefaultListableBeanFactory) {
+            DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) registry;
+            if (beanFactory.containsBean(beanName) && beanFactory.getBean(beanName).toString().startsWith(HTTP_API_PREFIX)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
