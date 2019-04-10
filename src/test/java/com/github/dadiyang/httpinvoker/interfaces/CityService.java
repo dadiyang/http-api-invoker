@@ -133,4 +133,10 @@ public interface CityService {
     @ExpectedCode(1)
     @HttpReq("/getCityByName")
     City getCityWithResultBean(@Param("name") String name);
+
+    /**
+     * 测试返回值为 Object 的情况
+     */
+    @HttpReq("/getCityObject")
+    Object getCityObject();
 }

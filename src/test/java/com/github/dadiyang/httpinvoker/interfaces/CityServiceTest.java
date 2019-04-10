@@ -300,7 +300,6 @@ public class CityServiceTest {
         assertEquals(mockCity, city);
     }
 
-
     @Test
     public void getAllCitiesWithResultBeanResponseProcessor() throws NoSuchMethodException {
         List<City> mockCities = createCities();
@@ -323,5 +322,15 @@ public class CityServiceTest {
         CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
         City result = cityServiceWithResultBeanResponseProcessor.getCityWithResultBean(cityName);
         assertEquals(city, result);
+    }
+
+    @Test
+    public void getCityObject() throws UnsupportedEncodingException {
+        String uri = "/city/getCityObject";
+        String cityString = JSON.toJSONString(createCity("北京"));
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(cityString)));
+        Object obj = cityService.getCityObject();
+        assertEquals(obj, cityString);
     }
 }

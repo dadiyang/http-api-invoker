@@ -23,7 +23,12 @@ public class DefaultResponseProcessor implements ResponseProcessor {
         if (body == null || body.trim().isEmpty()) {
             return null;
         }
-        if (method.getReturnType() == String.class) {
+        // return body if return type is Object
+        if (method.getReturnType() == Object.class) {
+            return response.getBody();
+        }
+        if (method.getReturnType() == String.class
+                || method.getReturnType() == CharSequence.class) {
             return body;
         }
         if (method.getReturnType() == byte[].class) {
