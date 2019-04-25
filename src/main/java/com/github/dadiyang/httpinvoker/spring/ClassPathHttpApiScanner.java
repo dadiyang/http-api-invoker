@@ -9,10 +9,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.beans.factory.support.*;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
@@ -40,6 +37,8 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
                                    Requestor requestor, RequestPreprocessor requestPreprocessor,
                                    ResponseProcessor responseProcessor) {
         super(registry, false);
+        // use DefaultBeanNameGenerator to prevent bean name conflict
+        setBeanNameGenerator(new DefaultBeanNameGenerator());
         this.registry = registry;
         this.propertyResolver = propertyResolver;
         this.factoryBean = HttpApiProxyFactoryBean.class;
@@ -96,9 +95,7 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     private boolean isHttpApiBean(String beanName) {
         if (registry instanceof DefaultListableBeanFactory) {
             DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) registry;
-            if (beanFactory.containsBean(beanName) && beanFactory.getBean(beanName).toString().startsWith(HTTP_API_PREFIX)) {
-                return true;
-            }
+            return beanFactory.containsBean(beanName) && beanFactory.getBean(beanName).toString().startsWith(HTTP_API_PREFIX);
         }
         return false;
     }
@@ -110,7 +107,7 @@ public class ClassPathHttpApiScanner extends ClassPathBeanDefinitionScanner {
     protected void registerBeanDefinition(BeanDefinitionHolder holder, BeanDefinitionRegistry registry) {
         GenericBeanDefinition definition = (GenericBeanDefinition) holder.getBeanDefinition();
         if (logger.isDebugEnabled()) {
-            logger.debug("c " + includeAnn.getSimpleName() + "Bean with name '" + holder.getBeanName()
+            logger.debug(includeAnn.getSimpleName() + ": Bean with name '" + holder.getBeanName()
                     + "' and '" + definition.getBeanClassName() + "' interface");
         }
         if (logger.isDebugEnabled()) {
