@@ -116,4 +116,5 @@ public class HttpRequest {
     public void setFileFormKey(String fileFormKey) {
         this.fileFormKey = fileFormKey;
     }
+
 }

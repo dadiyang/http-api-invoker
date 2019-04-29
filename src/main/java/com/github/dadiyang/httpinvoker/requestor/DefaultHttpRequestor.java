@@ -72,8 +72,8 @@ public class DefaultHttpRequestor implements Requestor {
             // body first
             if (request.getBody() != null) {
                 Object bodyParam = request.getBody();
-                // if the body param is InputStream, upload it
-                if (isUploadRequest(request, bodyParam)) {
+                // if the body param is MultiPart or InputStream, submit a multipart form
+                if (isUploadRequest(bodyParam)) {
                     log.debug("upload file {} request to {} ", m, url);
                     response = uploadFile(request);
                 } else {
@@ -125,15 +125,47 @@ public class DefaultHttpRequestor implements Requestor {
         }
     }
 
-    private boolean isUploadRequest(HttpRequest request, Object bodyParam) {
-        return bodyParam != null && (InputStream.class.isAssignableFrom(bodyParam.getClass())
-                || File.class.isAssignableFrom(request.getBody().getClass()));
+    private boolean isUploadRequest(Object bodyParam) {
+        return bodyParam != null && (bodyParam instanceof MultiPart
+                || InputStream.class.isAssignableFrom(bodyParam.getClass())
+                || File.class.isAssignableFrom(bodyParam.getClass()));
     }
 
     /**
      * @param request the request
      */
     private Response uploadFile(HttpRequest request) throws IOException {
+        Connection conn = Jsoup.connect(request.getUrl());
+        conn.method(Method.POST)
+                .timeout(request.getTimeout())
+                .ignoreHttpErrors(true)
+                // unlimited size
+                .maxBodySize(0)
+                .ignoreContentType(true);
+        addHeadersAndCookies(request, conn);
+        Object body = request.getBody();
+        // handle MultiPart
+        if (body instanceof MultiPart) {
+            return handleMultiPart(conn, (MultiPart) body);
+        }
+        return handleInputStreamAndFile(request, conn);
+    }
+
+    private Response handleMultiPart(Connection conn, MultiPart body) throws IOException {
+        for (MultiPart.Part part : body.getParts()) {
+            if (part.getKey() == null || part.getValue() == null) {
+                throw new IllegalArgumentException("both key and value of part must not be null");
+            }
+            if (part.getInputStream() != null) {
+                conn.data(part.getKey(), part.getValue(), part.getInputStream());
+            } else {
+                conn.data(part.getKey(), part.getValue());
+            }
+        }
+        return conn.execute();
+    }
+
+    private Response handleInputStreamAndFile(HttpRequest request, Connection conn) throws IOException {
         Map<String, Object> paramMap = request.getData();
         String formKey = DEFAULT_UPLOAD_FORM_KEY;
         if (request.getFileFormKey() != null
@@ -150,14 +182,6 @@ public class DefaultHttpRequestor implements Requestor {
                 }
             }
         }
-        Connection conn = Jsoup.connect(request.getUrl());
-        conn.method(Method.POST)
-                .timeout(request.getTimeout())
-                .ignoreHttpErrors(true)
-                // unlimited size
-                .maxBodySize(0)
-                .ignoreContentType(true);
-        addHeadersAndCookies(request, conn);
         String fileName = "fileName";
         InputStream in;
         if (File.class.isAssignableFrom(request.getBody().getClass())) {

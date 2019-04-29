@@ -6,6 +6,7 @@ import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
+import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
 import com.github.dadiyang.httpinvoker.requestor.ResultBeanResponseProcessor;
 import com.github.dadiyang.httpinvoker.util.CityUtil;
@@ -14,6 +15,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -249,18 +251,53 @@ public class CityServiceTest {
         String uri = "/city/picture/upload";
         String randomName = UUID.randomUUID().toString();
         String fileName = "conf.properties";
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName)) {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName);) {
             byte[] bytes = new byte[in.available()];
             in.read(bytes);
             wireMockRule.stubFor(post(urlPathEqualTo(uri))
-                    .withMultipartRequestBody(aMultipart("media"))
+                    .withMultipartRequestBody(aMultipart("media").withBody(binaryEqualTo(bytes)))
                     .withMultipartRequestBody(aMultipart("fileName").withBody(equalTo(fileName)))
                     .willReturn(aResponse().withBody(randomName)));
-            String name = cityService.upload(fileName, in);
+            String name = cityService.upload(fileName, new ByteArrayInputStream(bytes));
             assertEquals(randomName, name);
         } catch (IOException e) {
             e.printStackTrace();
             fail("read test file error");
+        }
+    }
+
+    @Test
+    public void multipartTest() {
+        String uri = "/city/files/upload";
+        String randomName = UUID.randomUUID().toString();
+        String fileName1 = "conf.properties";
+        String fileName2 = "conf2.properties";
+        try (InputStream in1 = getClass().getClassLoader().getResourceAsStream(fileName1);
+             InputStream in2 = getClass().getClassLoader().getResourceAsStream(fileName2);) {
+
+            byte[] bytes1 = new byte[in1.available()];
+            in1.read(bytes1);
+
+            byte[] bytes2 = new byte[in2.available()];
+            in2.read(bytes2);
+
+            wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                    .withMultipartRequestBody(aMultipart("conf1").withBody(binaryEqualTo(bytes1)))
+                    .withMultipartRequestBody(aMultipart("conf2").withBody(binaryEqualTo(bytes2)))
+                    .willReturn(aResponse().withBody(randomName)));
+
+            MultiPart.Part part1 = new MultiPart.Part("conf1", fileName1, new ByteArrayInputStream(bytes1));
+            MultiPart.Part part2 = new MultiPart.Part("conf2", fileName2, new ByteArrayInputStream(bytes2));
+
+            MultiPart multiPart = new MultiPart();
+            multiPart.addPart(part1);
+            multiPart.addPart(part2);
+
+            String name = cityService.multiPartForm(multiPart);
+            assertEquals(randomName, name);
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("submit multipart form error");
         }
     }
 

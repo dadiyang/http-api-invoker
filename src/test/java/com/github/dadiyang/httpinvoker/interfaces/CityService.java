@@ -5,6 +5,7 @@ import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
+import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 import com.github.dadiyang.httpinvoker.requestor.Status;
 
 import java.io.InputStream;
@@ -105,6 +106,14 @@ public interface CityService {
     @HttpReq(value = "/picture/upload", method = "POST")
     String upload(@Param("fileName") String fileName,
                   @Param(value = "media") InputStream in);
+
+    /**
+     * 提交 multipart/form-data 表单，实现多文件上传
+     *
+     * @param multiPart 表单
+     */
+    @HttpReq(value = "/files/upload", method = "POST")
+    String multiPartForm(MultiPart multiPart);
 
     /**
      * #{variable} 表示支持路径参数，且该路径参数不会在填充后被移除，而是在消息体中也带上该参数

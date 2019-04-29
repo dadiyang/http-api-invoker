@@ -83,25 +83,20 @@ public class HttpApiInvoker implements InvocationHandler {
             // this proxy only implement those HttpReq-annotated method
             throw new IllegalStateException("this proxy only implement those HttpReq-annotated method");
         }
-        String url = "";
         HttpReq anno = method.getAnnotation(HttpReq.class);
-        url += anno.value();
-        // fill config variables
-        url = fillConfigVariables(url);
-
-        // if the interface was annotated by @HttpApi and the url has no protocol
-        if (clazz.isAnnotationPresent(HttpApi.class)
-                && !PROTOCOL_PATTERN.matcher(url).find()) {
-            HttpApi httpApi = clazz.getAnnotation(HttpApi.class);
-            String pre = "".equals(httpApi.prefix()) ? httpApi.value() : httpApi.prefix();
-            url = pre + url;
-        }
-        // prepare param
+        String url = prepareUrl(anno);
         HttpRequest request = new HttpRequest(anno.timeout(), anno.method());
-        // fill config variables again
-        url = fillConfigVariables(url);
         request.setUrl(url);
         if (args != null && args.length > 0) {
+            // find MultiPart
+            for (Object arg : args) {
+                if (arg instanceof MultiPart) {
+                    if (!"POST".equalsIgnoreCase(request.getMethod())) {
+                        throw new IllegalStateException("unsupported request method form multipart form: " + request.getMethod());
+                    }
+                    request.setBody(arg);
+                }
+            }
             Map<String, Object> params = null;
             Map<String, Object> annotatedParam = parseAnnotatedParams(args, method, request);
             // use annotated param if exists
@@ -155,6 +150,27 @@ public class HttpApiInvoker implements InvocationHandler {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
         return returnValue;
+    }
+
+    private String prepareUrl(HttpReq anno) {
+        String url = anno.value();
+        // fill config variables
+        url = fillConfigVariables(url);
+        url = setPrefix(url);
+        // fill config variables again, because the prefix may have placeholders
+        return fillConfigVariables(url);
+    }
+
+    private String setPrefix(String url) {
+        // if the interface was annotated by @HttpApi and the url has no protocol, set the prefix
+        if (clazz.isAnnotationPresent(HttpApi.class)
+                && !PROTOCOL_PATTERN.matcher(url).find()) {
+            HttpApi httpApi = clazz.getAnnotation(HttpApi.class);
+            // use prefix or value of HttpApi as the url's prefix
+            String pre = "".equals(httpApi.prefix()) ? httpApi.value() : httpApi.prefix();
+            url = pre + url;
+        }
+        return url;
     }
 
     private boolean isNotNeedReturnValue(Method method, String url, HttpResponse response) throws IOException {
@@ -269,6 +285,9 @@ public class HttpApiInvoker implements InvocationHandler {
                 continue;
             }
             Annotation[] annotation = annotations[i];
+            if (annotation.length == 0) {
+                continue;
+            }
             for (Annotation ann : annotation) {
                 if (ann instanceof Param) {
                     Param param = (Param) ann;

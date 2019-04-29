@@ -166,6 +166,41 @@ HttpApiProxyFactory factory = new HttpApiProxyFactory(cityResultProcessor);
 CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.class);
 City city = cityServiceWithResponseProcessor.getCity(id);
 ```
+
+## 七、文件上传
+
+只要方法参数是 MultiPart 
+示例：
+
+```java
+/**
+ * 提交 multipart/form-data 表单，实现多文件上传
+ *
+ * @param multiPart 表单
+ */
+@HttpReq(value = "/files/upload", method = "POST")
+String multiPartForm(MultiPart multiPart);
+```
+
+调用示例：
+
+```java
+String fileName1 = "conf.properties";
+String fileName2 = "conf2.properties";
+try (InputStream in1 = new FileInputStream(fileName1);
+     InputStream in2 = new FileInputStream(fileName2);) {
+    // 支持一个或多个文件
+    MultiPart.Part part1 = new MultiPart.Part("conf1", fileName1, in1);
+    MultiPart.Part part2 = new MultiPart.Part("conf2", fileName2, in2);
+    MultiPart multiPart = new MultiPart();
+    multiPart.addPart(part1);
+    multiPart.addPart(part2);
+    cityService.multiPartForm(multiPart);
+} catch (IOException e) {
+    e.printStackTrace();
+}
+```
+
 # 核心注解
 
 ## @HttpApiScan
