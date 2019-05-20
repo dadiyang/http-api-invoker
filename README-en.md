@@ -29,7 +29,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.6</version>
+    <version>1.1.7</version>
  </dependency>
 ```
 
@@ -174,6 +174,25 @@ City city = cityServiceWithResponseProcessor.getCity(id);
 
 or in Spring scenario, register a RequestPreprocessor Bean.
 
+Usually, an HTTP api would response a ResultBean formed with code/msg/data fields, like: 
+
+```json
+{
+    "code": 0, 
+    "data": {
+        "name": "Hello"
+    },
+    "msg or message": "xx"
+}
+```
+
+We provided a `ResultBeanResponseProcessor` for this scenario. 
+
+It will check the code specify by @ExpectedCode annotation or 0 by default. 
+
+If the code in response body is not equals to the expected one, an IllegalStateException will be thrown.
+
+If they are equal, the data field will be parse to return value, unless the method do not need it or its return type is a ResultBean.
 
 # CORE ANNOTATION
 
