@@ -1,16 +1,18 @@
 package com.github.dadiyang.httpinvoker;
 
+import com.github.dadiyang.httpinvoker.propertyresolver.EnvironmentBasePropertyResolver;
+import com.github.dadiyang.httpinvoker.propertyresolver.MultiSourcePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.DefaultHttpRequestor;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
+import org.springframework.core.env.Environment;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,6 +27,58 @@ public class HttpApiProxyFactory {
     private PropertyResolver propertyResolver;
     private RequestPreprocessor requestPreprocessor;
     private ResponseProcessor responseProcessor;
+
+    /**
+     * the builder of HttpApiProxyFactory
+     *
+     * @author dadiyang
+     * @since 2019/5/20
+     */
+    public static class Builder {
+        private Requestor requestor;
+        private MultiSourcePropertyResolver propertyResolvers = new MultiSourcePropertyResolver();
+        private RequestPreprocessor requestPreprocessor;
+        private ResponseProcessor responseProcessor;
+
+        public Builder setRequestor(Requestor requestor) {
+            this.requestor = requestor;
+            return this;
+        }
+
+        public Builder setRequestPreprocessor(RequestPreprocessor requestPreprocessor) {
+            this.requestPreprocessor = requestPreprocessor;
+            return this;
+        }
+
+        public Builder setResponseProcessor(ResponseProcessor responseProcessor) {
+            this.responseProcessor = responseProcessor;
+            return this;
+        }
+
+        public Builder addPropertyResolver(PropertyResolver propertyResolver) {
+            this.propertyResolvers.addPropertyResolver(propertyResolver);
+            return this;
+        }
+
+        public Builder addProperties(Properties properties) {
+            propertyResolvers.addPropertyResolver(new PropertiesBasePropertyResolver(properties));
+            return this;
+        }
+
+        public Builder addEnvironment(Environment environment) {
+            propertyResolvers.addPropertyResolver(new EnvironmentBasePropertyResolver(environment));
+            return this;
+        }
+
+        public HttpApiProxyFactory build() {
+            HttpApiProxyFactory factory = new HttpApiProxyFactory();
+            factory.requestor = requestor;
+            factory.responseProcessor = responseProcessor;
+            factory.requestPreprocessor = requestPreprocessor;
+            factory.propertyResolver = propertyResolvers;
+            return factory;
+        }
+    }
 
     public HttpApiProxyFactory() {
         this(new DefaultHttpRequestor(), System.getProperties());
@@ -221,5 +275,21 @@ public class HttpApiProxyFactory {
         }
         //noinspection unchecked
         return (T) instances.get(clazz);
+    }
+
+    public Requestor getRequestor() {
+        return requestor;
+    }
+
+    public PropertyResolver getPropertyResolver() {
+        return propertyResolver;
+    }
+
+    public RequestPreprocessor getRequestPreprocessor() {
+        return requestPreprocessor;
+    }
+
+    public ResponseProcessor getResponseProcessor() {
+        return responseProcessor;
     }
 }

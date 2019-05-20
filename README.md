@@ -167,6 +167,27 @@ CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.clas
 City city = cityServiceWithResponseProcessor.getCity(id);
 ```
 
+实践中，很多 HTTP 接口通常使用具有 code、msg或message、data 三个字段的类作为返回值，即 ResultBean 的形式: 
+
+```json
+{
+    "code": 0, 
+    "data": {
+        "name": "Hello"
+    },
+    "msg或message": "xx"
+}
+```
+
+因此，我们提供了 ResultBeanResponseProcessor 来处理这种请求。
+
+配合 @ExpectedCode 注解，来表明期望的 code 值，默认为 0。
+
+若响应体返回的 code 值与期望值：
+
+* 不等时抛出异常，异常信息为 message 的内容
+* 相等时解析 data 中的内容
+
 ## 七、文件上传
 
 只要方法参数是 MultiPart 

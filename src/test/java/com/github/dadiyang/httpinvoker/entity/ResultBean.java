@@ -15,7 +15,7 @@ public class ResultBean<T> {
         this.data = data;
     }
 
-    public ResultBean(int code, String msg) {
+    public ResultBean(String msg, int code) {
         this.code = code;
         this.msg = msg;
     }

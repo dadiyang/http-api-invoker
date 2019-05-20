@@ -137,7 +137,7 @@ public class HttpApiInvoker implements InvocationHandler {
         } else {
             response = retrySendRequest(request, retryPolicy);
         }
-        if (isNotNeedReturnValue(method, url, response)) {
+        if (isSuc(url, response)) {
             return null;
         }
         Object returnValue;
@@ -173,7 +173,7 @@ public class HttpApiInvoker implements InvocationHandler {
         return url;
     }
 
-    private boolean isNotNeedReturnValue(Method method, String url, HttpResponse response) throws IOException {
+    private boolean isSuc(String url, HttpResponse response) throws IOException {
         if (response == null) {
             return true;
         }
@@ -200,7 +200,9 @@ public class HttpApiInvoker implements InvocationHandler {
             if (tryTime > 1 && retryPolicy.fixedBackOffPeriod() > 0) {
                 try {
                     Thread.sleep(retryPolicy.fixedBackOffPeriod());
-                } catch (InterruptedException ignored) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("thread interrupted when waiting for retry", e);
                 }
             }
             boolean needRetry = false;

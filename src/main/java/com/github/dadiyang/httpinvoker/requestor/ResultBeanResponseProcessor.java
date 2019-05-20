@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * 注册响应处理器，用于对后台返回的结果都是类似 {code: 0, msg/message: 'success', data: 'OK'} 的结构，
@@ -16,7 +18,7 @@ import java.lang.reflect.Method;
  * 此时我们只需要判断 code 是否为期望的值 (ExpectedCode中设置)，是的话，解析 data 的值否则抛出异常
  *
  * @author huangxuyang
- * @since  1.1.4
+ * @since 1.1.4
  */
 @Component
 public class ResultBeanResponseProcessor implements ResponseProcessor {
@@ -33,8 +35,12 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (rs == null || rs.trim().isEmpty()) {
             return null;
         }
+        // 如果返回值要求的就是一个 ResultBean，则不做处理
+        if (isResultBean(method.getReturnType())) {
+            return parseObject(method, rs);
+        }
         JSONObject obj = JSON.parseObject(rs);
-        if (isNotResultBean(obj)) {
+        if (isResponseNotResultBean(obj)) {
             // 非 ResultBean 则解析整个返回结果
             return parseObject(method, rs);
         }
@@ -56,10 +62,36 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     }
 
     /**
+     * 判断一个 Class 是否为 ResultBean，即是否同时包含 code/msg/data 三个字段
+     */
+    private boolean isResultBean(Class<?> returnType) {
+        Field[] fields = returnType.getDeclaredFields();
+        boolean hasCode = false;
+        boolean hasMsg = false;
+        boolean hasData = false;
+        for (Field field : fields) {
+            String fieldName = field.getName().toLowerCase();
+            hasCode = hasCode || Objects.equals(CODE, fieldName);
+            hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
+            hasData = hasData || Objects.equals(DATA, fieldName);
+        }
+        return hasCode && hasMsg && hasData;
+    }
+
+    /**
      * 没有包含 code、msg/message 和 data 则不是 ResultBean
      */
-    private boolean isNotResultBean(JSONObject obj) {
-        return !obj.containsKey(CODE) || (!obj.containsKey(MSG) && !obj.containsKey(MESSAGE) && !obj.containsKey(DATA));
+    private boolean isResponseNotResultBean(JSONObject obj) {
+        boolean hasCode = false;
+        boolean hasMsg = false;
+        boolean hasData = false;
+        for (String key : obj.keySet()) {
+            String fieldName = key == null ? "" : key.toLowerCase();
+            hasCode = hasCode || Objects.equals(CODE, fieldName);
+            hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
+            hasData = hasData || Objects.equals(DATA, fieldName);
+        }
+        return !hasCode || (!hasMsg && !hasData);
     }
 
     /**
@@ -67,6 +99,11 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
      */
     private Object parseObject(Method method, String dataString) {
         if (dataString == null || dataString.trim().isEmpty()) {
+            return null;
+        }
+        // 方法无需返回值
+        Class<?> returnType = method.getReturnType();
+        if (returnType == Void.class || returnType == void.class) {
             return null;
         }
         return JSON.parseObject(dataString, method.getGenericReturnType());

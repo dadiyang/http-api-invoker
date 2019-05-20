@@ -34,6 +34,8 @@ public class CityServiceTest {
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(PORT));
     private CityService cityService;
+    private CityService cityServiceWithResultBeanResponseProcessor;
+
     private String authKey;
 
     @Before
@@ -42,6 +44,7 @@ public class CityServiceTest {
         System.setProperty("api.url.city.host2", "http://localhost:" + PORT);
         HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory();
         cityService = httpApiProxyFactory.getProxy(CityService.class);
+        cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
         authKey = UUID.randomUUID().toString();
     }
 
@@ -99,6 +102,10 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
         ResultBean<City> cityResultBean = cityService.getCityByName(cityName);
         assertEquals(mockCityResult, cityResultBean);
+
+        // 测试如果返回值是 resultBean 时，尽管添加了 ResultBeanResponseProcessor 也不做特殊处理
+        cityResultBean = cityServiceWithResultBeanResponseProcessor.getCityByName(cityName);
+        assertEquals("返回值是 resultBean 时，ResultBeanResponseProcessor 不应做特殊处理", mockCityResult, cityResultBean);
     }
 
     @Test
@@ -239,11 +246,11 @@ public class CityServiceTest {
     public void deleteCity() {
         int id = 1;
         String uri = "/city/" + id;
-        List<Integer> cityIds = Arrays.asList(1, 2, 3);
-        List<City> rs = CityUtil.getCities(cityIds);
         wireMockRule.stubFor(delete(urlPathEqualTo(uri))
-                .willReturn(ok()));
+                .willReturn(ok().withBody(JSON.toJSONString(new ResultBean<>(0, "OK")))));
+        // 没有返回值的方法，只要不报错就可以
         cityService.deleteCity(id);
+        cityServiceWithResultBeanResponseProcessor.deleteCity(id);
     }
 
     @Test
@@ -342,7 +349,6 @@ public class CityServiceTest {
         List<City> mockCities = createCities();
         String uri = "/city/allCities";
         wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCities)))));
-        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
         List<City> cityList = cityServiceWithResultBeanResponseProcessor.getAllCities();
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));

@@ -1,5 +1,6 @@
 package com.github.dadiyang.httpinvoker.propertyresolver;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -30,6 +31,10 @@ public class MultiSourcePropertyResolver implements PropertyResolver {
 
     public MultiSourcePropertyResolver() {
         resolvers = new LinkedHashSet<>();
+    }
+
+    public Set<PropertyResolver> getResolvers() {
+        return Collections.unmodifiableSet(resolvers);
     }
 
     /**
