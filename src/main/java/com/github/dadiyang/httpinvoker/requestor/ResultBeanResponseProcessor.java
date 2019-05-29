@@ -4,13 +4,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
+import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 注册响应处理器，用于对后台返回的结果都是类似 {code: 0, msg/message: 'success', data: 'OK'} 的结构，
@@ -27,16 +30,28 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     private static final String DATA = "data";
     private static final String MESSAGE = "message";
     private static final String MSG = "msg";
+    private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<>();
 
     @Override
     public Object process(HttpResponse response, Method method) {
         // 对返回值进行解析，code 为 0，则返回反序列化 data 的值，否则抛出异常
         String rs = response.getBody();
+        // 以下几种情况下，无需解析响应
         if (rs == null || rs.trim().isEmpty()) {
             return null;
         }
+        Class<?> returnType = method.getReturnType();
+        if (returnType == byte[].class) {
+            return response.getBodyAsBytes();
+        }
+        if (returnType != Object.class && returnType.isAssignableFrom(BufferedInputStream.class)) {
+            return response.getBodyStream();
+        }
+        if (returnType != Object.class && returnType.isAssignableFrom(response.getClass())) {
+            return response;
+        }
         // 如果返回值要求的就是一个 ResultBean，则不做处理
-        if (isResultBean(method.getReturnType())) {
+        if (Objects.equals(isResultBean(returnType), true)) {
             return parseObject(method, rs);
         }
         JSONObject obj = JSON.parseObject(rs);
@@ -64,18 +79,40 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     /**
      * 判断一个 Class 是否为 ResultBean，即是否同时包含 code/msg/data 三个字段
      */
-    private boolean isResultBean(Class<?> returnType) {
-        Field[] fields = returnType.getDeclaredFields();
-        boolean hasCode = false;
-        boolean hasMsg = false;
-        boolean hasData = false;
-        for (Field field : fields) {
-            String fieldName = field.getName().toLowerCase();
-            hasCode = hasCode || Objects.equals(CODE, fieldName);
-            hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
-            hasData = hasData || Objects.equals(DATA, fieldName);
+    private Boolean isResultBean(final Class<?> returnType) {
+        return isResultBeanCache.computeIfAbsent(returnType, (type) -> {
+            if (ParamUtils.isBasicType(returnType) || type.isInterface()) {
+                return false;
+            }
+            Field[] fields = getDeclaredFields(type);
+            boolean hasCode = false;
+            boolean hasMsg = false;
+            boolean hasData = false;
+            for (Field field : fields) {
+                String fieldName = field.getName().toLowerCase();
+                hasCode = hasCode || Objects.equals(CODE, fieldName);
+                hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
+                hasData = hasData || Objects.equals(DATA, fieldName);
+            }
+            return hasCode && hasMsg && hasData;
+        });
+    }
+
+    /**
+     * 获取字段，包含父级
+     */
+    private Field[] getDeclaredFields(Class<?> returnType) {
+        if (returnType.getSuperclass() == Object.class) {
+            return returnType.getDeclaredFields();
+        } else {
+            List<Field> fields = new ArrayList<>();
+            Class<?> type = returnType;
+            while (type != Object.class && !type.isInterface()) {
+                fields.addAll(Arrays.asList(type.getDeclaredFields()));
+                type = returnType.getSuperclass();
+            }
+            return fields.toArray(new Field[]{});
         }
-        return hasCode && hasMsg && hasData;
     }
 
     /**
@@ -105,6 +142,10 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         Class<?> returnType = method.getReturnType();
         if (returnType == Void.class || returnType == void.class) {
             return null;
+        } else if (returnType == Object.class
+                || returnType == String.class
+                || method.getReturnType() == CharSequence.class) {
+            return dataString;
         }
         return JSON.parseObject(dataString, method.getGenericReturnType());
     }

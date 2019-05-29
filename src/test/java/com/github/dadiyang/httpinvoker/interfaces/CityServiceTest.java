@@ -244,13 +244,15 @@ public class CityServiceTest {
 
     @Test
     public void deleteCity() {
-        int id = 1;
-        String uri = "/city/" + id;
-        wireMockRule.stubFor(delete(urlPathEqualTo(uri))
-                .willReturn(ok().withBody(JSON.toJSONString(new ResultBean<>(0, "OK")))));
-        // 没有返回值的方法，只要不报错就可以
-        cityService.deleteCity(id);
-        cityServiceWithResultBeanResponseProcessor.deleteCity(id);
+        for (int i = 0; i < 10; i++) {
+            int id = 1;
+            String uri = "/city/" + id;
+            wireMockRule.stubFor(delete(urlPathEqualTo(uri))
+                    .willReturn(ok().withBody(JSON.toJSONString(new ResultBean<>(0, "OK")))));
+            // 没有返回值的方法，只要不报错就可以
+            cityService.deleteCity(id);
+            cityServiceWithResultBeanResponseProcessor.deleteCity(id);
+        }
     }
 
     @Test
@@ -370,10 +372,26 @@ public class CityServiceTest {
     @Test
     public void getCityObject() throws UnsupportedEncodingException {
         String uri = "/city/getCityObject";
-        String cityString = JSON.toJSONString(createCity("北京"));
+        String cityString = JSON.toJSONString(new ResultBean<>(0, "123"));
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityObject();
         assertEquals(obj, cityString);
+
+        obj = cityServiceWithResultBeanResponseProcessor.getCityObject();
+        assertEquals("123", obj);
+    }
+
+    @Test
+    public void getCityName() {
+        String uri = "/city/getCityName";
+        String cityString = JSON.toJSONString(new ResultBean<>(0, "123"));
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(cityString)));
+        Object obj = cityService.getCityName();
+        assertEquals(obj, cityString);
+
+        obj = cityServiceWithResultBeanResponseProcessor.getCityName();
+        assertEquals("123", obj);
     }
 }

@@ -5,6 +5,7 @@ import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.*;
+import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +42,6 @@ public class HttpApiInvoker implements InvocationHandler {
     private Requestor requestor;
     private PropertyResolver propertyResolver;
     private Class<?> clazz;
-    private List<Class<?>> notJsonifyType = Arrays.asList(Byte.class, Short.class,
-            Integer.class, Long.class, Float.class, Double.class, Character.class,
-            Boolean.class, String.class, Array.class);
     private RequestPreprocessor requestPreprocessor;
     private ResponseProcessor responseProcessor;
 
@@ -252,9 +250,8 @@ public class HttpApiInvoker implements InvocationHandler {
     private Map<String, Object> parseParam(Object arg) {
         Map<String, Object> params;
         Class<?> cls = arg.getClass();
-        if (cls.isPrimitive()
-                || isCollection(arg)
-                || notJsonifyType.contains(cls)) {
+        if (ParamUtils.isBasicType(cls)
+                || isCollection(arg)) {
             // we don't handle collection param here
             params = null;
         } else {

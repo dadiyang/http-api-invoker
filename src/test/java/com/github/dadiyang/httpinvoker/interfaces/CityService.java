@@ -148,4 +148,10 @@ public interface CityService {
      */
     @HttpReq("/getCityObject")
     Object getCityObject();
+
+    /**
+     * 测试返回值为 String 类型
+     */
+    @HttpReq("/getCityName")
+    String getCityName();
 }

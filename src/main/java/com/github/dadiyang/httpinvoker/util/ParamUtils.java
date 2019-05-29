@@ -8,10 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * utils for handling param
@@ -20,6 +17,23 @@ import java.util.Map;
  * @since 1.1.2
  */
 public class ParamUtils {
+    private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
+            Integer.class, Long.class, Float.class, Double.class, Character.class,
+            Boolean.class, String.class, Void.class);
+
+    /**
+     * check if the clz is primary type, primary type's wrapper, String or Void
+     *
+     * @param clz the type
+     * @return check if the clz is basic type
+     */
+    public static boolean isBasicType(Class<?> clz) {
+        if (clz == null) {
+            return false;
+        }
+        return clz.isPrimitive() || BASIC_TYPE.contains(clz);
+    }
+
     /**
      * check if the arg is a collection
      *
