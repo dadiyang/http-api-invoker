@@ -5,6 +5,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
+import com.github.dadiyang.httpinvoker.entity.ResultBeanWithStatusAsCode;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
@@ -364,8 +365,19 @@ public class CityServiceTest {
         ResultBean<City> mockCityResult = new ResultBean<>(1, city);
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
-        CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
         City result = cityServiceWithResultBeanResponseProcessor.getCityWithResultBean(cityName);
+        assertEquals(city, result);
+    }
+
+    @Test
+    public void getCityWithStatusCode() throws UnsupportedEncodingException {
+        String cityName = "北京";
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        City city = createCity(cityName);
+        ResultBeanWithStatusAsCode<City> mockCityResult = new ResultBeanWithStatusAsCode<>(1, city);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
+        City result = cityServiceWithResultBeanResponseProcessor.getCityWithStatusCode(cityName);
         assertEquals(city, result);
     }
 
@@ -377,7 +389,6 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityObject();
         assertEquals(obj, cityString);
-
         obj = cityServiceWithResultBeanResponseProcessor.getCityObject();
         assertEquals("123", obj);
     }

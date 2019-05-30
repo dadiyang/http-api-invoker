@@ -19,4 +19,14 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface ExpectedCode {
     int value() default 0;
+
+    /**
+     * code 字段名，默认是 code
+     */
+    String codeFieldName() default "code";
+
+    /**
+     * 是否忽略 code 字段首字母大小写
+     */
+    boolean ignoreFieldInitialCase() default true;
 }

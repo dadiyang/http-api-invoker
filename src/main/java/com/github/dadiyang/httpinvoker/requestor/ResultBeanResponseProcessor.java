@@ -50,18 +50,19 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (returnType != Object.class && returnType.isAssignableFrom(response.getClass())) {
             return response;
         }
+        ExpectedCode expectedCode = getExpectedAnnotation(method);
         // 如果返回值要求的就是一个 ResultBean，则不做处理
-        if (Objects.equals(isResultBean(returnType), true)) {
+        if (Objects.equals(isResultBean(expectedCode, returnType), true)) {
             return parseObject(method, rs);
         }
         JSONObject obj = JSON.parseObject(rs);
-        if (isResponseNotResultBean(obj)) {
+        if (isResponseNotResultBean(expectedCode, obj)) {
             // 非 ResultBean 则解析整个返回结果
             return parseObject(method, rs);
         }
+
         //  标准的 ResultBean 包装类处理，进行解包处理，即只取 data 的值
-        int expectedCode = getExpectedCode(method);
-        if (obj.getIntValue(CODE) == expectedCode) {
+        if (isExpectedCode(expectedCode, obj)) {
             // code 为期望的值时说明返回结果是正确的
             return parseObject(method, obj.getString(DATA));
         } else {
@@ -76,10 +77,40 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         }
     }
 
+    private boolean isExpectedCode(ExpectedCode expectedCode, JSONObject obj) {
+        if (expectedCode != null) {
+            return isExpectedCode(obj, expectedCode.value(), expectedCode.codeFieldName(), expectedCode.ignoreFieldInitialCase());
+        }
+        // 默认 期望 0, 字段 code, 忽略首字母大小写
+        return isExpectedCode(obj, 0, CODE, true);
+    }
+
+
+    private boolean isExpectedCode(JSONObject obj, int expectedCode, String codeField, boolean ignoreFieldInitialCase) {
+        // 如果没有，而且需要忽略首字母大小写，则改变首字母大小写
+        if (!obj.containsKey(codeField) && ignoreFieldInitialCase) {
+            codeField = ParamUtils.changeInitialCase(codeField);
+        }
+        return Objects.equals(expectedCode, obj.getInteger(codeField));
+    }
+
+    private ExpectedCode getExpectedAnnotation(Method method) {
+        // 方法是有打注解，则使用方法上的
+        if (method.isAnnotationPresent(ExpectedCode.class)) {
+            return method.getAnnotation(ExpectedCode.class);
+        }
+        // 否则使用类上的注解
+        Class<?> clazz = method.getDeclaringClass();
+        if (clazz.isAnnotationPresent(ExpectedCode.class)) {
+            return clazz.getAnnotation(ExpectedCode.class);
+        }
+        return null;
+    }
+
     /**
      * 判断一个 Class 是否为 ResultBean，即是否同时包含 code/msg/data 三个字段
      */
-    private Boolean isResultBean(final Class<?> returnType) {
+    private Boolean isResultBean(final ExpectedCode expectedCode, final Class<?> returnType) {
         return isResultBeanCache.computeIfAbsent(returnType, (type) -> {
             if (ParamUtils.isBasicType(returnType) || type.isInterface()) {
                 return false;
@@ -88,9 +119,11 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
             boolean hasCode = false;
             boolean hasMsg = false;
             boolean hasData = false;
+            String codeField = expectedCode == null ? CODE : expectedCode.codeFieldName();
+            boolean ignoreInitialCase = expectedCode == null || expectedCode.ignoreFieldInitialCase();
             for (Field field : fields) {
                 String fieldName = field.getName().toLowerCase();
-                hasCode = hasCode || Objects.equals(CODE, fieldName);
+                hasCode = hasCode || Objects.equals(codeField, fieldName) || (ignoreInitialCase && Objects.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
                 hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
                 hasData = hasData || Objects.equals(DATA, fieldName);
             }
@@ -118,13 +151,15 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     /**
      * 没有包含 code、msg/message 和 data 则不是 ResultBean
      */
-    private boolean isResponseNotResultBean(JSONObject obj) {
+    private boolean isResponseNotResultBean(ExpectedCode expectedCode, JSONObject obj) {
         boolean hasCode = false;
         boolean hasMsg = false;
         boolean hasData = false;
+        String codeField = expectedCode == null ? CODE : expectedCode.codeFieldName();
+        boolean ignoreInitialCase = expectedCode == null || expectedCode.ignoreFieldInitialCase();
         for (String key : obj.keySet()) {
             String fieldName = key == null ? "" : key.toLowerCase();
-            hasCode = hasCode || Objects.equals(CODE, fieldName);
+            hasCode = hasCode || Objects.equals(codeField, fieldName) || (ignoreInitialCase && Objects.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
             hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
             hasData = hasData || Objects.equals(DATA, fieldName);
         }
@@ -149,26 +184,4 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         }
         return JSON.parseObject(dataString, method.getGenericReturnType());
     }
-
-    /**
-     * 获取正确的 code 值，默认为0
-     *
-     * @return 正确的 code 值
-     */
-    private int getExpectedCode(Method method) {
-        // 方法是有打注解，则使用方法上的
-        if (method.isAnnotationPresent(ExpectedCode.class)) {
-            ExpectedCode expectedCode = method.getAnnotation(ExpectedCode.class);
-            return expectedCode.value();
-        }
-        // 否则使用类上的注解
-        Class<?> clazz = method.getDeclaringClass();
-        if (clazz.isAnnotationPresent(ExpectedCode.class)) {
-            ExpectedCode expectedCode = clazz.getAnnotation(ExpectedCode.class);
-            return expectedCode.value();
-        }
-        // 默认为 0
-        return 0;
-    }
-
 }

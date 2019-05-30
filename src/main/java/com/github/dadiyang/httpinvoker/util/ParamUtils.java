@@ -17,6 +17,10 @@ import java.util.*;
  * @since 1.1.2
  */
 public class ParamUtils {
+    private static final char UPPER_A = 'A';
+    private static final char UPPER_Z = 'Z';
+    private static final char LOWER_A = 'a';
+    private static final char LOWER_Z = 'z';
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Void.class);
@@ -103,5 +107,22 @@ public class ParamUtils {
             valBuilder.append(entry.getKey()).append("=").append(item).append("&");
         }
         return valBuilder.toString();
+    }
+
+    public static char changeCase(char c) {
+        if (c >= UPPER_A && c <= UPPER_Z) {
+            return c += 32;
+        } else if (c >= LOWER_A && c <= LOWER_Z) {
+            return c -= 32;
+        } else {
+            return c;
+        }
+    }
+
+    public static String changeInitialCase(String c) {
+        if (c == null || c.isEmpty()) {
+            return c;
+        }
+        return changeCase(c.charAt(0)) + c.substring(1);
     }
 }

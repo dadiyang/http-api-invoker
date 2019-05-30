@@ -154,4 +154,11 @@ public interface CityService {
      */
     @HttpReq("/getCityName")
     String getCityName();
+
+    /**
+     * 测试 ResultBean 的成功标识为 status 的场景
+     */
+    @HttpReq("/getCityByName")
+    @ExpectedCode(value = 1, codeFieldName = "status")
+    City getCityWithStatusCode(@Param("name") String name);
 }
