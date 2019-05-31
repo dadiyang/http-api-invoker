@@ -19,6 +19,10 @@ public class MockRule {
      * uri 正则，即忽略协议和域名，如 http://localhost:8080/city/getName，则 uri 为 /city/getName
      */
     private String uriReg;
+    /**
+     * 请求方法：GET/POST/PUT 等
+     */
+    private String method;
     private Map<String, String> headers;
     private Map<String, String> cookies;
     private Map<String, Object> data;
@@ -34,6 +38,12 @@ public class MockRule {
 
     public MockRule(String urlReg, HttpResponse response) {
         this.urlReg = urlReg;
+        this.response = response;
+    }
+
+    public MockRule(String urlReg, String method, HttpResponse response) {
+        this.urlReg = urlReg;
+        this.method = method;
         this.response = response;
     }
 
@@ -91,6 +101,14 @@ public class MockRule {
         this.body = body;
     }
 
+    public String getMethod() {
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
+    }
+
     public String getUriReg() {
         return uriReg;
     }
@@ -104,6 +122,7 @@ public class MockRule {
         return "MockRule{" +
                 "urlReg='" + urlReg + '\'' +
                 ", uriReg='" + uriReg + '\'' +
+                ", method='" + method + '\'' +
                 ", headers=" + headers +
                 ", cookies=" + cookies +
                 ", data=" + data +

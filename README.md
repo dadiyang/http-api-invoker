@@ -15,6 +15,7 @@
 3. 支持上传和下载文件
 4. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
 5. 完善的文档用例和单元测试
+6. 支持 Mock
 
 # 技术栈
  
@@ -223,6 +224,60 @@ try (InputStream in1 = new FileInputStream(fileName1);
     e.printStackTrace();
 }
 ```
+
+## 八、Mock
+
+在实际开发过程中，我们依赖的接口可能由于尚未开发完成、服务不稳定或者没有需要的测试数据等原因，导致我们在**开发过程中浪费掉很多时间**
+
+如果服务接口能在我们开发调试的时候**随心所欲地返回我们设定好的响应**，等到开发完再进行真实接口的联调，就会**大大提高我们的开发效率**
+
+因此，本项目提供 Mock 的功能，**根据给定的规则匹配请求，若与给定的规则能匹配上，则使用给定的 Response 做为请求响应直接返回，没有匹配到则发送真实请求**
+
+其原理就是实现 Requestor 接口以**接管发送请求的方法**
+
+### 直接使用
+```java
+// 生成 MockRequestor 对象
+MockRequestor requestor = new MockRequestor();
+HttpApiProxyFactory factory = new HttpApiProxyFactory.Builder()
+        // 注册到 代理工厂 中，以接管请求发送过程
+        .setRequestor(requestor)
+        // 配置文件
+        .addProperties(in)
+        .build();
+// 获取代理对象
+CityService cityService = factory.getProxy(CityService.class);
+Map<String, String> params = new HashMap<>();
+params.put("id", 1);
+// 返回模拟的请求响应：MockResponse
+MockResponse response = new MockResponse(200, "北京");
+// 添加匹配规则
+MockRule rule = new MockRule("http://localhost:18888/city/getCityName", params, response);
+requestor.addRule(rule);
+String name = cityService.getCityName(1);
+System.out.println(name);
+```
+
+### 整合Spring
+
+在有 @Configuration 注解的类中添加方法：
+
+* 注意，**千万不要在生产环境中使用**，可以通过 @Profile 或者 @Conditional 注解来有条件地添加，或者只在单元测试中使用
+
+```java
+    @Bean
+    // 注意，千万不要在生产环境中使用，可以使用 @Profile("dev") 注解声明只在开发环境中自动扫包
+    @Profile("dev")
+    public MockRequestor requestor() {
+        MockRequestor requestor = new MockRequestor();
+        MockRule rule = ...
+        // 添加 mock 规则
+        requestor.addRule(rule);
+        return requestor;
+    }
+```
+
+Mock请求器会在每次发送请求的时候打印警告
 
 # 核心注解
 

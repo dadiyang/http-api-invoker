@@ -38,4 +38,11 @@ public class CityServiceSpringTest {
         City city = cityService.getCity(id);
         assertEquals(mockCity, city);
     }
+
+    @Test
+    public void mock() {
+        // 在 TestApplication 中添加了 mock 规则，因此这个请求不会被真正发出
+        String name = cityService.getCityName(1);
+        assertEquals("北京", name);
+    }
 }

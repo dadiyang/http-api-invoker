@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * <p>
  * 没有匹配的规则才发起真实请求
  * <p>
- * 注：只用于本地开发环境使用，生产环境千万不要使用此请求器！！
+ * 注：只用于开发环境使用，生产环境千万不要使用此请求器！！
  *
  * @author dadiyang
  * @since 2019-05-31
@@ -40,9 +40,12 @@ public class MockRequestor implements Requestor {
     }
 
     public MockRequestor(List<MockRule> mockRules, Requestor realRequestor) {
+        if (realRequestor == null) {
+            throw new IllegalArgumentException("必须配置一个真实请求的请求器");
+        }
         this.mockRules = mockRules;
         this.realRequestor = realRequestor;
-        log.info("初始化 MOCK 请求器，注意：一般只用于本地开发环境使用，生产环境千万不要使用此请求器！！");
+        log.info("初始化 MOCK 请求器，注意：一般只用于开发环境使用，生产环境千万不要使用此请求器！！");
     }
 
     public MockRequestor(List<MockRule> mockRules) {
@@ -58,7 +61,7 @@ public class MockRequestor implements Requestor {
         Objects.requireNonNull(request, "请求不能为 null");
         Objects.requireNonNull(request.getUrl(), "请求 url 不能为 null");
         if (!ignoreWarning) {
-            log.warn("当前使用 MOCK 请求器，注意：一般只在本地开发环境使用，生产环境千万不要使用此请求器！！");
+            log.warn("当前使用 MOCK 请求器，注意：一般只在开发环境使用，生产环境千万不要使用此请求器！！");
         }
         List<MockRule> matchedRule = mockRules.stream()
                 .filter(m -> isMatch(request, m))
@@ -91,29 +94,34 @@ public class MockRequestor implements Requestor {
         }
     }
 
-    private boolean isMatch(HttpRequest request, MockRule m) {
-        if (m == null) {
+    private boolean isMatch(HttpRequest request, MockRule rule) {
+        if (rule == null) {
             return false;
         }
-        if (!isUrlOrUriMatch(request, m)) {
+        if (rule.getMethod() != null && !rule.getMethod().isEmpty()
+                && !Objects.equals(request.getMethod().toUpperCase(), rule.getMethod().toUpperCase())) {
+            log.info("请求方法规则不匹配: requestMethod: " + request.getMethod() + ", ruleMethod: " + rule.getMethod());
             return false;
         }
-        if (!isMapMatch(m.getData(), request.getData())) {
-            log.info("参数规则不匹配: requestData: " + request.getData() + ", ruleData: " + m.getData());
+        if (!isUrlOrUriMatch(request, rule)) {
             return false;
         }
-        if (!Objects.equals(m.getBody(), request.getBody())) {
-            log.info("请求体规则不匹配: requestBody: " + request.getBody() + ", ruleBody: " + m.getBody());
+        if (!isMapMatch(rule.getData(), request.getData())) {
+            log.info("参数规则不匹配: requestData: " + request.getData() + ", ruleData: " + rule.getData());
+            return false;
+        }
+        if (!Objects.equals(rule.getBody(), request.getBody())) {
+            log.info("请求体规则不匹配: requestBody: " + request.getBody() + ", ruleBody: " + rule.getBody());
             return false;
         }
         // 校验 cookie
-        if (!isMapMatch(m.getCookies(), request.getCookies())) {
-            log.info("Cookie规则不匹配: requestCookies: " + request.getCookies() + ", ruleCookies: " + m.getCookies());
+        if (!isMapMatch(rule.getCookies(), request.getCookies())) {
+            log.info("Cookie规则不匹配: requestCookies: " + request.getCookies() + ", ruleCookies: " + rule.getCookies());
             return false;
         }
         // 校验 header
-        if (!isMapMatch(m.getHeaders(), request.getHeaders())) {
-            log.info("Header规则不匹配: requestHeaders: " + request.getHeaders() + ", ruleHeaders: " + m.getHeaders());
+        if (!isMapMatch(rule.getHeaders(), request.getHeaders())) {
+            log.info("Header规则不匹配: requestHeaders: " + request.getHeaders() + ", ruleHeaders: " + rule.getHeaders());
             return false;
         }
         // 全部校验通过，则匹配
