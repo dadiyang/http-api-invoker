@@ -29,7 +29,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.8</version>
+    <version>1.1.9</version>
  </dependency>
 ```
 
