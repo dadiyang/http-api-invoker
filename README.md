@@ -62,7 +62,9 @@ public interface CityService {
 }
 ```
 
-注：这里只展示最简单的使用方法，完整功能的示例可查看[单元测试中的CityService接口](./src/test/java/com/github/dadiyang/httpinvoker/interfaces/CityService.java)
+注：
+  * 如果有参数，需要添加 `@Param("参数名")`
+  * 这里只展示最简单的使用方法，完整功能的示例可查看[单元测试中的CityService接口](./src/test/java/com/github/dadiyang/httpinvoker/interfaces/CityService.java)
 
 ## 三、获取代理
 

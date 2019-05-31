@@ -230,7 +230,7 @@ public class HttpApiInvoker implements InvocationHandler {
                     // an unexpected exception occur, so we throw it
                     throw e;
                 } else {
-                    log.warn("send request error, tryTime: {}, error: {}", tryTime, e.getMessage());
+                    log.warn("send request error, tryTime: {}, url: {}, error: {}", tryTime, request.getUrl(), e.getMessage());
                 }
             }
         }
