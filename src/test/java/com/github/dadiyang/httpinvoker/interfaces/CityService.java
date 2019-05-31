@@ -89,6 +89,9 @@ public interface CityService {
     @HttpReq("/getCityRest/{id}")
     City getCityWithCookies(@Param("id") int id, @Cookies Map<String, String> cookies);
 
+    @HttpReq("/getCityRest/{id}")
+    City getCityWithCookiesAndHeaders(@Param("id") int id, @Cookies Map<String, String> cookies, @Headers Map<String, String> headers);
+
     /**
      * 判断给定的城市是否存在
      * <p>
@@ -153,7 +156,7 @@ public interface CityService {
      * 测试返回值为 String 类型
      */
     @HttpReq("/getCityName")
-    String getCityName();
+    String getCityName(@Param("id") int id);
 
     /**
      * 测试 ResultBean 的成功标识为 status 的场景

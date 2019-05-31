@@ -10,6 +10,10 @@ import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
 import org.springframework.core.env.Environment;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.*;
@@ -63,6 +67,24 @@ public class HttpApiProxyFactory {
         public Builder addProperties(Properties properties) {
             propertyResolvers.addPropertyResolver(new PropertiesBasePropertyResolver(properties));
             return this;
+        }
+
+        public Builder addProperties(InputStream in) throws IOException {
+            try {
+                Properties properties = new Properties();
+                properties.load(in);
+                return addProperties(properties);
+            } finally {
+                in.close();
+            }
+        }
+
+        public Builder addProperties(File file) throws IOException {
+            try (InputStream in = new FileInputStream(file)) {
+                Properties properties = new Properties();
+                properties.load(in);
+                return addProperties(properties);
+            }
         }
 
         public Builder addEnvironment(Environment environment) {

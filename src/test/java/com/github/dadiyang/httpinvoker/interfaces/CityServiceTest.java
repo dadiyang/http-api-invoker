@@ -396,13 +396,14 @@ public class CityServiceTest {
     @Test
     public void getCityName() {
         String uri = "/city/getCityName";
-        String cityString = JSON.toJSONString(new ResultBean<>(0, "123"));
-        wireMockRule.stubFor(get(urlEqualTo(uri))
+        String cityString = JSON.toJSONString(new ResultBean<>(0, "北京"));
+        wireMockRule.stubFor(get(urlPathEqualTo(uri))
+                .withQueryParam("id", equalTo("1"))
                 .willReturn(aResponse().withBody(cityString)));
-        Object obj = cityService.getCityName();
+        Object obj = cityService.getCityName(1);
         assertEquals(obj, cityString);
 
-        obj = cityServiceWithResultBeanResponseProcessor.getCityName();
-        assertEquals("123", obj);
+        obj = cityServiceWithResultBeanResponseProcessor.getCityName(1);
+        assertEquals("北京", obj);
     }
 }
