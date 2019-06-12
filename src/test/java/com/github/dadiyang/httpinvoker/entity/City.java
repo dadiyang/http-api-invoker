@@ -1,8 +1,6 @@
 package com.github.dadiyang.httpinvoker.entity;
 
 
-import java.util.Objects;
-
 /**
  * @author huangxuyang
  */
@@ -47,12 +45,15 @@ public class City {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         City city = (City) o;
-        return Objects.equals(id, city.id) &&
-                Objects.equals(name, city.name);
+        if (id != null ? !id.equals(city.id) : city.id != null) return false;
+        return name != null ? name.equals(city.name) : city.name == null;
+
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        return result;
     }
 }

@@ -2,16 +2,15 @@ package com.github.dadiyang.httpinvoker;
 
 import com.github.dadiyang.httpinvoker.propertyresolver.MultiSourcePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
-import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
-import com.github.dadiyang.httpinvoker.requestor.Requestor;
-import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
+import com.github.dadiyang.httpinvoker.requestor.*;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import org.junit.Test;
 import org.springframework.core.env.Environment;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.Objects;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -27,22 +26,30 @@ public class HttpApiProxyFactoryTest {
      */
     @Test
     public void testBuilder() {
-        Requestor requestor = request -> null;
-        RequestPreprocessor requestPreprocessor = request -> {
+        Requestor requestor = new Requestor() {
+            @Override
+            public HttpResponse sendRequest(HttpRequest request) throws IOException {
+                return null;
+            }
+        };
+        RequestPreprocessor requestPreprocessor = new RequestPreprocessor() {
+            @Override
+            public void process(HttpRequest request) {
+            }
         };
         Properties properties = new Properties();
         properties.setProperty("Pro1", "OK");
         Environment environment = (Environment) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{Environment.class}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (Objects.equals("getProperty", method.getName()) && args.length == 1) {
-                    if (Objects.equals("Env1", args[0])) {
+                if (ObjectUtils.equals("getProperty", method.getName()) && args.length == 1) {
+                    if (ObjectUtils.equals("Env1", args[0])) {
                         return "OK";
                     }
                 }
-                if (Objects.equals("containsProperty", method.getName())
+                if (ObjectUtils.equals("containsProperty", method.getName())
                         && args.length == 1) {
-                    return Objects.equals("Env1", args[0]);
+                    return ObjectUtils.equals("Env1", args[0]);
                 }
                 return null;
             }
@@ -50,18 +57,23 @@ public class HttpApiProxyFactoryTest {
         PropertyResolver resolver = new PropertyResolver() {
             @Override
             public boolean containsProperty(String key) {
-                return Objects.equals("PR1", key);
+                return ObjectUtils.equals("PR1", key);
             }
 
             @Override
             public String getProperty(String key) {
-                if (Objects.equals("PR1", key)) {
+                if (ObjectUtils.equals("PR1", key)) {
                     return "OK";
                 }
                 return null;
             }
         };
-        ResponseProcessor responseProcessor = (response, method) -> null;
+        ResponseProcessor responseProcessor = new ResponseProcessor() {
+            @Override
+            public Object process(HttpResponse response, Method method) {
+                return null;
+            }
+        };
         HttpApiProxyFactory factory = new HttpApiProxyFactory.Builder()
                 .setRequestor(requestor)
                 .setRequestPreprocessor(requestPreprocessor)

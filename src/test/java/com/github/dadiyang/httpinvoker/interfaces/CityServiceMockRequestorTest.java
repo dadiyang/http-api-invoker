@@ -13,8 +13,9 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
+import static com.github.dadiyang.httpinvoker.util.IoUtils.closeStream;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -30,33 +31,37 @@ public class CityServiceMockRequestorTest {
     @Before
     public void setUp() throws Exception {
         requestor = new MockRequestor();
-        try (InputStream in = CityServiceMockRequestorTest.class.getClassLoader().getResourceAsStream("conf.properties")) {
+        InputStream in = null;
+        try {
+            in = CityServiceMockRequestorTest.class.getClassLoader().getResourceAsStream("conf.properties");
             // 通过 Builder 构建代理工厂，使用 MockRequestor 来接管发送请求的过程
             HttpApiProxyFactory factory = new HttpApiProxyFactory.Builder()
                     .setRequestor(requestor)
                     .addProperties(in)
                     .build();
             cityService = factory.getProxy(CityService.class);
+        } finally {
+            closeStream(in);
         }
     }
 
     @Test
     public void urlAndDataTest() {
-        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", 1), new MockResponse(200, "北京")));
+        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", (Object) 1), new MockResponse(200, "北京")));
         String name = cityService.getCityName(1);
         assertEquals("北京", name);
     }
 
     @Test
     public void urlRegTest() {
-        requestor.addRule(new MockRule("http://localhost:18888/city/.*", Collections.singletonMap("id", 1), new MockResponse(200, "北京")));
+        requestor.addRule(new MockRule("http://localhost:18888/city/.*", Collections.singletonMap("id", (Object) 1), new MockResponse(200, "北京")));
         String name = cityService.getCityName(1);
         assertEquals("北京", name);
     }
 
     @Test
     public void uriTest() {
-        int id = ThreadLocalRandom.current().nextInt();
+        int id = nextInt();
         City city = new City(id, "北京");
         MockRule rule = new MockRule();
         rule.setUriReg("/city/getCityRest/" + id);
@@ -66,19 +71,25 @@ public class CityServiceMockRequestorTest {
         assertEquals(city, rs);
     }
 
+    private int nextInt() {
+        Random r = new Random();
+        return r.nextInt();
+    }
+
     @Test
     public void headerTest() {
-        int id = ThreadLocalRandom.current().nextInt();
+        int id = nextInt();
         City city = new City(id, "北京");
         MockRule rule = new MockRule("http://localhost:18888/city/getCityRest/" + id, "GET", new MockResponse(200, JSON.toJSONString(city)));
         Map<String, String> header = genMap();
         rule.setHeaders(header);
 
         // 请求头里还有规则之外的东西，匹配器应该忽略这些
-        Map<String, String> requestHeader = new HashMap<>();
-        header.forEach(requestHeader::put);
+        Map<String, String> requestHeader = new HashMap<String, String>();
+        for (Map.Entry<String, String> entry : header.entrySet()) {
+            requestHeader.put(entry.getKey(), entry.getValue());
+        }
         requestHeader.put("xxx", "1234");
-
         requestor.addRule(rule);
         City rs = cityService.getCityWithHeaders(id, requestHeader);
         assertEquals(city, rs);
@@ -86,7 +97,7 @@ public class CityServiceMockRequestorTest {
 
     @Test(expected = Exception.class)
     public void methodMismatch() {
-        int id = ThreadLocalRandom.current().nextInt();
+        int id = nextInt();
         City city = new City(id, "北京");
         MockRule rule = new MockRule("http://localhost:18888/city/listCity" + id, "POST", new MockResponse(200, JSON.toJSONString(city)));
         requestor.addRule(rule);
@@ -94,15 +105,15 @@ public class CityServiceMockRequestorTest {
     }
 
     private Map<String, String> genMap() {
-        Map<String, String> header = new HashMap<>();
-        header.put("ttt", String.valueOf(ThreadLocalRandom.current().nextLong()));
-        header.put("ttt2", String.valueOf(ThreadLocalRandom.current().nextLong()));
+        Map<String, String> header = new HashMap<String, String>();
+        header.put("ttt", String.valueOf(nextInt()));
+        header.put("ttt2", String.valueOf(nextInt()));
         return header;
     }
 
     @Test
     public void cookieTest() {
-        int id = ThreadLocalRandom.current().nextInt();
+        int id = nextInt();
         City city = new City(id, "北京");
         MockRule rule = new MockRule("http://localhost:18888/city/getCityRest/" + id, new MockResponse(200, JSON.toJSONString(city)));
         Map<String, String> cookies = genMap();
@@ -114,7 +125,7 @@ public class CityServiceMockRequestorTest {
 
     @Test
     public void headerAndCookieTest() {
-        int id = ThreadLocalRandom.current().nextInt();
+        int id = nextInt();
         City city = new City(id, "北京");
         MockRule rule = new MockRule("http://localhost:18888/city/getCityRest/" + id, new MockResponse(200, JSON.toJSONString(city)));
         Map<String, String> cookies = genMap();
@@ -128,8 +139,8 @@ public class CityServiceMockRequestorTest {
 
     @Test(expected = IllegalStateException.class)
     public void getCityNameMultiMockRuleTest() {
-        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", 1), new MockResponse(200, "北京")));
-        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", 1), new MockResponse(200, "北京")));
+        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", (Object) 1), new MockResponse(200, "北京")));
+        requestor.addRule(new MockRule("http://localhost:18888/city/getCityName", Collections.singletonMap("id", (Object) 1), new MockResponse(200, "北京")));
         String name = cityService.getCityName(1);
         assertEquals("北京", name);
     }

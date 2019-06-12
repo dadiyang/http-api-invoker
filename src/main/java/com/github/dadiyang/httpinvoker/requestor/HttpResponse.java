@@ -121,7 +121,7 @@ public class HttpResponse {
     }
 
     public Map<String, String> getHeaders() {
-        LinkedHashMap<String, String> map = new LinkedHashMap<>(headers.size());
+        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>(headers.size());
         for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
             String header = entry.getKey();
             List<String> values = entry.getValue();

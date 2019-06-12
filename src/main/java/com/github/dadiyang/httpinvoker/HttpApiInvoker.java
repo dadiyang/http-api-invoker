@@ -71,7 +71,7 @@ public class HttpApiInvoker implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (!method.isAnnotationPresent(HttpReq.class)) {
             // toString method with a specific prefix
-            if (TO_STRING.equals(method.getName()) && method.getParameterCount() == 0) {
+            if (TO_STRING.equals(method.getName()) && method.getParameterTypes().length == 0) {
                 return HTTP_API_PREFIX + this;
             }
             // those Object's methods invoke 'this' method
@@ -215,7 +215,7 @@ public class HttpApiInvoker implements InvocationHandler {
                 if (!needRetry) {
                     return response;
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 if (tryTime >= retryTime) {
                     // it's the last time we try
                     throw e;
@@ -291,7 +291,7 @@ public class HttpApiInvoker implements InvocationHandler {
                 if (ann instanceof Param) {
                     Param param = (Param) ann;
                     if (map == null) {
-                        map = new HashMap<>();
+                        map = new HashMap<String, Object>();
                     }
                     if (isFile(args[i])) {
                         request.setBody(args[i]);

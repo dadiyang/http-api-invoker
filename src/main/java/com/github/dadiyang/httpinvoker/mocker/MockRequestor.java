@@ -4,6 +4,7 @@ import com.github.dadiyang.httpinvoker.requestor.DefaultHttpRequestor;
 import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,10 +12,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Mock 请求器，使用这个请求器可以配置一些规则，当发起的请求符合这个规则时，直接返回给定的结果而不发起真实请求
@@ -36,7 +36,7 @@ public class MockRequestor implements Requestor {
     private final Requestor realRequestor;
 
     public MockRequestor() {
-        this(new ArrayList<>(), new DefaultHttpRequestor());
+        this(new ArrayList<MockRule>(), new DefaultHttpRequestor());
     }
 
     public MockRequestor(List<MockRule> mockRules, Requestor realRequestor) {
@@ -49,7 +49,7 @@ public class MockRequestor implements Requestor {
     }
 
     public MockRequestor(List<MockRule> mockRules) {
-        this(new ArrayList<>(mockRules), new DefaultHttpRequestor());
+        this(new ArrayList<MockRule>(mockRules), new DefaultHttpRequestor());
     }
 
     public void addRule(MockRule rule) {
@@ -58,24 +58,32 @@ public class MockRequestor implements Requestor {
 
     @Override
     public HttpResponse sendRequest(HttpRequest request) throws IOException {
-        Objects.requireNonNull(request, "请求不能为 null");
-        Objects.requireNonNull(request.getUrl(), "请求 url 不能为 null");
+        ObjectUtils.requireNonNull(request, "请求不能为 null");
+        ObjectUtils.requireNonNull(request.getUrl(), "请求 url 不能为 null");
         if (!ignoreWarning) {
             log.warn("当前使用 MOCK 请求器，注意：一般只在开发环境使用，生产环境千万不要使用此请求器！！");
         }
-        List<MockRule> matchedRule = mockRules.stream()
-                .filter(m -> isMatch(request, m))
-                .collect(Collectors.toList());
+        List<MockRule> matchedRule = new LinkedList<MockRule>();
+        for (MockRule rule : mockRules) {
+            if (isMatch(request, rule)) {
+                matchedRule.add(rule);
+            }
+        }
         // 没有匹配则发起真实请求
         if (matchedRule.isEmpty()) {
             log.info("请求没有找到对应的 mock，所以发起真实请求: " + request.getUrl());
             return realRequestor.sendRequest(request);
         }
         if (matchedRule.size() > 1) {
+            List<MockRule> exactlyMatches = new LinkedList<MockRule>();
             // 在匹配到的规则器里找url或uri完全匹配的
-            matchedRule = matchedRule.stream()
-                    .filter(r -> Objects.equals(r.getUrlReg(), request.getUrl()) || Objects.equals(r.getUriReg(), getUri(request.getUrl())))
-                    .collect(Collectors.toList());
+            for (MockRule rule : matchedRule) {
+                if (ObjectUtils.equals(rule.getUrlReg(), request.getUrl())
+                        || ObjectUtils.equals(rule.getUriReg(), getUri(request.getUrl()))) {
+                    exactlyMatches.add(rule);
+                }
+            }
+            matchedRule = exactlyMatches;
             // 如果还是有多个，则抛出异常
             if (matchedRule.size() > 1) {
                 throw new IllegalStateException("一个请求匹配到 " + matchedRule.size() + " 个 mock 规则，请确认是否重复添加: " + request.getUrl());
@@ -99,7 +107,7 @@ public class MockRequestor implements Requestor {
             return false;
         }
         if (rule.getMethod() != null && !rule.getMethod().isEmpty()
-                && !Objects.equals(request.getMethod().toUpperCase(), rule.getMethod().toUpperCase())) {
+                && !ObjectUtils.equals(request.getMethod().toUpperCase(), rule.getMethod().toUpperCase())) {
             log.info("请求方法规则不匹配: requestMethod: " + request.getMethod() + ", ruleMethod: " + rule.getMethod());
             return false;
         }
@@ -110,7 +118,7 @@ public class MockRequestor implements Requestor {
             log.info("参数规则不匹配: requestData: " + request.getData() + ", ruleData: " + rule.getData());
             return false;
         }
-        if (!Objects.equals(rule.getBody(), request.getBody())) {
+        if (!ObjectUtils.equals(rule.getBody(), request.getBody())) {
             log.info("请求体规则不匹配: requestBody: " + request.getBody() + ", ruleBody: " + rule.getBody());
             return false;
         }
@@ -152,7 +160,7 @@ public class MockRequestor implements Requestor {
     }
 
     private boolean isStringMatch(String uri, String urlReg) {
-        return Objects.equals(uri, urlReg)
+        return ObjectUtils.equals(uri, urlReg)
                 || uri.matches(urlReg);
     }
 
@@ -168,7 +176,7 @@ public class MockRequestor implements Requestor {
         for (Map.Entry<String, ?> entry : mapFromMockRule.entrySet()) {
             Object value = mapFromRequest.get(entry.getKey());
             // 只要有一个 cookie 与请求不符，则不匹配
-            if (!Objects.equals(entry.getValue(), value)) {
+            if (!ObjectUtils.equals(entry.getValue(), value)) {
                 return false;
             }
         }

@@ -53,19 +53,19 @@ public class HttpRequest {
     }
 
     public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
+        this.headers = new HashMap<String, String>(headers);
     }
 
     public void addHeader(String key, String value) {
         if (headers == null) {
-            headers = new HashMap<>(8);
+            headers = new HashMap<String, String>(8);
         }
         headers.put(key, value);
     }
 
     public void addCookie(String key, String value) {
         if (cookies == null) {
-            cookies = new HashMap<>(8);
+            cookies = new HashMap<String, String>(8);
         }
         cookies.put(key, value);
     }
@@ -75,7 +75,7 @@ public class HttpRequest {
     }
 
     public void setCookies(Map<String, String> cookies) {
-        this.cookies = cookies;
+        this.cookies = new HashMap<String, String>(cookies);
     }
 
     public Map<String, Object> getData() {
@@ -88,7 +88,7 @@ public class HttpRequest {
 
     public void addParam(String key, String value) {
         if (data == null) {
-            data = new HashMap<>(8);
+            data = new HashMap<String, Object>(8);
         }
         data.put(key, value);
     }

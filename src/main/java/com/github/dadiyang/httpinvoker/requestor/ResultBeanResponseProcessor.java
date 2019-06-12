@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     private static final String DATA = "data";
     private static final String MESSAGE = "message";
     private static final String MSG = "msg";
-    private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<>();
+    private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<Class<?>, Boolean>();
 
     @Override
     public Object process(HttpResponse response, Method method) {
@@ -52,7 +53,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         }
         ExpectedCode expectedCode = getExpectedAnnotation(method);
         // 如果返回值要求的就是一个 ResultBean，则不做处理
-        if (Objects.equals(isResultBean(expectedCode, returnType), true)) {
+        if (ObjectUtils.equals(isResultBean(expectedCode, returnType), true)) {
             return parseObject(method, rs);
         }
         JSONObject obj = JSON.parseObject(rs);
@@ -91,7 +92,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (!obj.containsKey(codeField) && ignoreFieldInitialCase) {
             codeField = ParamUtils.changeInitialCase(codeField);
         }
-        return Objects.equals(expectedCode, obj.getInteger(codeField));
+        return ObjectUtils.equals(expectedCode, obj.getInteger(codeField));
     }
 
     private ExpectedCode getExpectedAnnotation(Method method) {
@@ -111,11 +112,17 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
      * 判断一个 Class 是否为 ResultBean，即是否同时包含 code/msg/data 三个字段
      */
     private Boolean isResultBean(final ExpectedCode expectedCode, final Class<?> returnType) {
-        return isResultBeanCache.computeIfAbsent(returnType, (type) -> {
-            if (ParamUtils.isBasicType(returnType) || type.isInterface()) {
+        if (isResultBeanCache.containsKey(returnType)) {
+            return isResultBeanCache.get(returnType);
+        }
+        synchronized (this) {
+            if (isResultBeanCache.containsKey(returnType)) {
+                return isResultBeanCache.get(returnType);
+            }
+            if (ParamUtils.isBasicType(returnType) || returnType.isInterface()) {
                 return false;
             }
-            Field[] fields = getDeclaredFields(type);
+            Field[] fields = getDeclaredFields(returnType);
             boolean hasCode = false;
             boolean hasMsg = false;
             boolean hasData = false;
@@ -123,12 +130,14 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
             boolean ignoreInitialCase = expectedCode == null || expectedCode.ignoreFieldInitialCase();
             for (Field field : fields) {
                 String fieldName = field.getName().toLowerCase();
-                hasCode = hasCode || Objects.equals(codeField, fieldName) || (ignoreInitialCase && Objects.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
-                hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
-                hasData = hasData || Objects.equals(DATA, fieldName);
+                hasCode = hasCode || ObjectUtils.equals(codeField, fieldName) || (ignoreInitialCase && ObjectUtils.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
+                hasMsg = hasMsg || ObjectUtils.equals(MSG, fieldName) || ObjectUtils.equals(MESSAGE, fieldName);
+                hasData = hasData || ObjectUtils.equals(DATA, fieldName);
             }
-            return hasCode && hasMsg && hasData;
-        });
+            boolean isResultBean = hasCode && hasMsg && hasData;
+            isResultBeanCache.put(returnType, isResultBean);
+            return isResultBean;
+        }
     }
 
     /**
@@ -138,7 +147,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (returnType.getSuperclass() == Object.class) {
             return returnType.getDeclaredFields();
         } else {
-            List<Field> fields = new ArrayList<>();
+            List<Field> fields = new ArrayList<Field>();
             Class<?> type = returnType;
             while (type != Object.class && !type.isInterface()) {
                 fields.addAll(Arrays.asList(type.getDeclaredFields()));
@@ -159,9 +168,9 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         boolean ignoreInitialCase = expectedCode == null || expectedCode.ignoreFieldInitialCase();
         for (String key : obj.keySet()) {
             String fieldName = key == null ? "" : key.toLowerCase();
-            hasCode = hasCode || Objects.equals(codeField, fieldName) || (ignoreInitialCase && Objects.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
-            hasMsg = hasMsg || Objects.equals(MSG, fieldName) || Objects.equals(MESSAGE, fieldName);
-            hasData = hasData || Objects.equals(DATA, fieldName);
+            hasCode = hasCode || ObjectUtils.equals(codeField, fieldName) || (ignoreInitialCase && ObjectUtils.equals(fieldName, ParamUtils.changeInitialCase(codeField)));
+            hasMsg = hasMsg || ObjectUtils.equals(MSG, fieldName) || ObjectUtils.equals(MESSAGE, fieldName);
+            hasData = hasData || ObjectUtils.equals(DATA, fieldName);
         }
         return !hasCode || (!hasMsg && !hasData);
     }

@@ -8,15 +8,17 @@ import com.github.dadiyang.httpinvoker.requestor.DefaultHttpRequestor;
 import com.github.dadiyang.httpinvoker.requestor.RequestPreprocessor;
 import com.github.dadiyang.httpinvoker.requestor.Requestor;
 import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
+import com.github.dadiyang.httpinvoker.util.IoUtils;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import org.springframework.core.env.Environment;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.util.*;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * date 2018/10/30
  */
 public class HttpApiProxyFactory {
-    private Map<Class<?>, Object> instances = new ConcurrentHashMap<>();
+    private Map<Class<?>, Object> instances = new ConcurrentHashMap<Class<?>, Object>();
     private Requestor requestor;
     private PropertyResolver propertyResolver;
     private RequestPreprocessor requestPreprocessor;
@@ -80,11 +82,9 @@ public class HttpApiProxyFactory {
         }
 
         public Builder addProperties(File file) throws IOException {
-            try (InputStream in = new FileInputStream(file)) {
-                Properties properties = new Properties();
-                properties.load(in);
-                return addProperties(properties);
-            }
+            ObjectUtils.requireNonNull(file, "properties file should not be null");
+            Properties properties = IoUtils.getPropertiesFromFile(file.getAbsolutePath());
+            return addProperties(properties);
         }
 
         public Builder addEnvironment(Environment environment) {

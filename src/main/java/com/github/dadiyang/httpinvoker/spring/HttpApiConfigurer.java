@@ -18,10 +18,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
+
+import static com.github.dadiyang.httpinvoker.util.IoUtils.*;
 
 /**
  * Scanning the base packages that {@link HttpApiScan} specified.
@@ -39,7 +39,7 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
     @Override
     public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry beanDefinitionRegistry) throws BeansException {
         Map<String, Object> beans = ctx.getBeansWithAnnotation(HttpApiScan.class);
-        Set<String> basePackages = new HashSet<>();
+        Set<String> basePackages = new HashSet<String>();
         Properties properties = new Properties();
         for (Map.Entry<String, Object> entry : beans.entrySet()) {
             HttpApiScan ann = entry.getValue().getClass().getAnnotation(HttpApiScan.class);
@@ -55,28 +55,11 @@ public class HttpApiConfigurer implements BeanDefinitionRegistryPostProcessor, A
                     if (path == null || path.isEmpty()) {
                         continue;
                     }
-                    if (path.startsWith(CLASSPATH_PRE)) {
-                        // load from class path
-                        path = path.replaceFirst(CLASSPATH_PRE, "");
-                        Properties p = new Properties();
-                        try (InputStream in = getClass().getClassLoader().getResourceAsStream(path)) {
-                            p.load(in);
-                        } catch (IOException e) {
-                            throw new IllegalStateException("read config error: " + path, e);
-                        }
+                    try {
+                        Properties p = getProperties(path);
                         properties.putAll(p);
-                    } else {
-                        // load from file
-                        if (path.startsWith(FILE_PRE)) {
-                            path = path.replaceFirst(FILE_PRE, "");
-                        }
-                        Properties p = new Properties();
-                        try (InputStream in = new FileInputStream(path)) {
-                            p.load(in);
-                        } catch (IOException e) {
-                            throw new IllegalStateException("read config error: " + path, e);
-                        }
-                        properties.putAll(p);
+                    } catch (IOException e) {
+                        throw new IllegalStateException("read config error: " + path, e);
                     }
                 }
             }

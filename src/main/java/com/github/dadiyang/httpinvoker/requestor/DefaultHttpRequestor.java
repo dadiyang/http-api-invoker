@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
 import com.alibaba.fastjson.JSON;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
@@ -12,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.github.dadiyang.httpinvoker.util.ParamUtils.*;
 import static org.jsoup.Connection.Method;
@@ -113,7 +113,7 @@ public class DefaultHttpRequestor implements Requestor {
     private boolean useJson(HttpRequest request, Object param) {
         // collection can only be send by json currently
         return isCollection(param) || request.getHeaders() == null
-                || Objects.equals(request.getHeaders().get(CONTENT_TYPE), APPLICATION_JSON);
+                || ObjectUtils.equals(request.getHeaders().get(CONTENT_TYPE), APPLICATION_JSON);
     }
 
     private void addHeadersAndCookies(HttpRequest request, Connection conn) {
@@ -174,7 +174,7 @@ public class DefaultHttpRequestor implements Requestor {
         } else if (paramMap != null && paramMap.containsKey(FORM_KEY)) {
             formKey = paramMap.get(FORM_KEY).toString();
         }
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<String, String>();
         if (paramMap != null) {
             for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
                 if (entry.getKey() != null && entry.getValue() != null) {

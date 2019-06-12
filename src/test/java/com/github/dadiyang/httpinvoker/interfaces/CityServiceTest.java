@@ -6,10 +6,7 @@ import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.entity.ResultBeanWithStatusAsCode;
-import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
-import com.github.dadiyang.httpinvoker.requestor.MultiPart;
-import com.github.dadiyang.httpinvoker.requestor.ResponseProcessor;
-import com.github.dadiyang.httpinvoker.requestor.ResultBeanResponseProcessor;
+import com.github.dadiyang.httpinvoker.requestor.*;
 import com.github.dadiyang.httpinvoker.util.CityUtil;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
@@ -20,12 +17,13 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCity;
+import static com.github.dadiyang.httpinvoker.util.IoUtils.closeStream;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.Assert.*;
@@ -81,7 +79,7 @@ public class CityServiceTest {
     @Test
     public void saveCity() {
         String uri = "/city/saveCity";
-        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<String, Object>();
         int id = 1;
         String name = "北京";
         body.put("name", name);
@@ -96,9 +94,9 @@ public class CityServiceTest {
     @Test
     public void getCityByName() throws UnsupportedEncodingException {
         String cityName = "北京";
-        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, "UTF-8");
         City city = createCity(cityName);
-        ResultBean<City> mockCityResult = new ResultBean<>(0, city);
+        ResultBean<City> mockCityResult = new ResultBean<City>(0, city);
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
         ResultBean<City> cityResultBean = cityService.getCityByName(cityName);
@@ -124,7 +122,7 @@ public class CityServiceTest {
         int id = 1;
         String name = "北京";
         String uri = "/city/" + id;
-        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<String, Object>();
         body.put("id", id);
         body.put("name", name);
         wireMockRule.stubFor(put(urlEqualTo(uri))
@@ -147,7 +145,7 @@ public class CityServiceTest {
 
     @Test
     public void getCityWithHeaders() {
-        Map<String, String> headers = new HashMap<>();
+        Map<String, String> headers = new HashMap<String, String>();
         String key = "auth";
         String key2 = "auth2";
         headers.put(key, "123");
@@ -165,7 +163,7 @@ public class CityServiceTest {
 
     @Test
     public void getCityWithCookies() {
-        Map<String, String> cookies = new HashMap<>();
+        Map<String, String> cookies = new HashMap<String, String>();
         String key = "auth";
         String key2 = "auth2";
         cookies.put(key, "123");
@@ -249,7 +247,7 @@ public class CityServiceTest {
             int id = 1;
             String uri = "/city/" + id;
             wireMockRule.stubFor(delete(urlPathEqualTo(uri))
-                    .willReturn(ok().withBody(JSON.toJSONString(new ResultBean<>(0, "OK")))));
+                    .willReturn(ok().withBody(JSON.toJSONString(new ResultBean<String>(0, "OK")))));
             // 没有返回值的方法，只要不报错就可以
             cityService.deleteCity(id);
             cityServiceWithResultBeanResponseProcessor.deleteCity(id);
@@ -257,11 +255,13 @@ public class CityServiceTest {
     }
 
     @Test
-    public void upload() {
+    public void upload() throws IOException {
         String uri = "/city/picture/upload";
         String randomName = UUID.randomUUID().toString();
         String fileName = "conf.properties";
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(fileName);) {
+        InputStream in = null;
+        try {
+            in = getClass().getClassLoader().getResourceAsStream(fileName);
             byte[] bytes = new byte[in.available()];
             in.read(bytes);
             wireMockRule.stubFor(post(urlPathEqualTo(uri))
@@ -273,18 +273,22 @@ public class CityServiceTest {
         } catch (IOException e) {
             e.printStackTrace();
             fail("read test file error");
+        } finally {
+            closeStream(in);
         }
     }
 
     @Test
-    public void multipartTest() {
+    public void multipartTest() throws IOException {
         String uri = "/city/files/upload";
         String randomName = UUID.randomUUID().toString();
         String fileName1 = "conf.properties";
         String fileName2 = "conf2.properties";
-        try (InputStream in1 = getClass().getClassLoader().getResourceAsStream(fileName1);
-             InputStream in2 = getClass().getClassLoader().getResourceAsStream(fileName2);) {
-
+        InputStream in1 = null;
+        InputStream in2 = null;
+        try {
+            in1 = getClass().getClassLoader().getResourceAsStream(fileName1);
+            in2 = getClass().getClassLoader().getResourceAsStream(fileName2);
             byte[] bytes1 = new byte[in1.available()];
             in1.read(bytes1);
 
@@ -308,14 +312,20 @@ public class CityServiceTest {
         } catch (IOException e) {
             e.printStackTrace();
             fail("submit multipart form error");
+        } finally {
+            closeStream(in1);
+            closeStream(in2);
         }
     }
 
     @Test
     public void preprocessorTest() {
-        HttpApiProxyFactory factory = new HttpApiProxyFactory(request -> {
-            request.addCookie("authCookies", authKey);
-            request.addHeader("authHeaders", authKey);
+        HttpApiProxyFactory factory = new HttpApiProxyFactory(new RequestPreprocessor() {
+            @Override
+            public void process(HttpRequest request) {
+                request.addCookie("authCookies", authKey);
+                request.addHeader("authHeaders", authKey);
+            }
         });
         CityService cityServiceWithPreprocessor = factory.getProxy(CityService.class);
         int id = 1;
@@ -331,10 +341,13 @@ public class CityServiceTest {
 
     @Test
     public void responseProcessTest() {
-        ResponseProcessor cityResultProcessor = (response, method) -> {
-            ResultBean<City> cityResultBean = JSON.parseObject(response.getBody(), new TypeReference<ResultBean<City>>() {
-            });
-            return cityResultBean.getData();
+        ResponseProcessor cityResultProcessor = new ResponseProcessor() {
+            @Override
+            public Object process(HttpResponse response, Method method) {
+                ResultBean<City> cityResultBean = JSON.parseObject(response.getBody(), new TypeReference<ResultBean<City>>() {
+                });
+                return cityResultBean.getData();
+            }
         };
         HttpApiProxyFactory factory = new HttpApiProxyFactory(cityResultProcessor);
         CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.class);
@@ -342,7 +355,7 @@ public class CityServiceTest {
         String uri = "/city/getById?id=" + id;
         City mockCity = createCity(id);
         wireMockRule.stubFor(get(urlEqualTo(uri))
-                .willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCity)))));
+                .willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<City>(0, mockCity)))));
         City city = cityServiceWithResponseProcessor.getCity(id);
         assertEquals(mockCity, city);
     }
@@ -351,7 +364,7 @@ public class CityServiceTest {
     public void getAllCitiesWithResultBeanResponseProcessor() throws NoSuchMethodException {
         List<City> mockCities = createCities();
         String uri = "/city/allCities";
-        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<>(0, mockCities)))));
+        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(new ResultBean<List<City>>(0, mockCities)))));
         List<City> cityList = cityServiceWithResultBeanResponseProcessor.getAllCities();
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));
@@ -360,9 +373,9 @@ public class CityServiceTest {
     @Test
     public void getCityWithResultBean() throws UnsupportedEncodingException {
         String cityName = "北京";
-        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, "UTF-8");
         City city = createCity(cityName);
-        ResultBean<City> mockCityResult = new ResultBean<>(1, city);
+        ResultBean<City> mockCityResult = new ResultBean<City>(1, city);
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
         City result = cityServiceWithResultBeanResponseProcessor.getCityWithResultBean(cityName);
@@ -372,9 +385,9 @@ public class CityServiceTest {
     @Test
     public void getCityWithStatusCode() throws UnsupportedEncodingException {
         String cityName = "北京";
-        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, StandardCharsets.UTF_8.toString());
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, "UTF-8");
         City city = createCity(cityName);
-        ResultBeanWithStatusAsCode<City> mockCityResult = new ResultBeanWithStatusAsCode<>(1, city);
+        ResultBeanWithStatusAsCode<City> mockCityResult = new ResultBeanWithStatusAsCode<City>(1, city);
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
         City result = cityServiceWithResultBeanResponseProcessor.getCityWithStatusCode(cityName);
@@ -384,7 +397,7 @@ public class CityServiceTest {
     @Test
     public void getCityObject() throws UnsupportedEncodingException {
         String uri = "/city/getCityObject";
-        String cityString = JSON.toJSONString(new ResultBean<>(0, "123"));
+        String cityString = JSON.toJSONString(new ResultBean<String>(0, "123"));
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityObject();
@@ -396,7 +409,7 @@ public class CityServiceTest {
     @Test
     public void getCityName() {
         String uri = "/city/getCityName";
-        String cityString = JSON.toJSONString(new ResultBean<>(0, "北京"));
+        String cityString = JSON.toJSONString(new ResultBean<String>(0, "北京"));
         wireMockRule.stubFor(get(urlPathEqualTo(uri))
                 .withQueryParam("id", equalTo("1"))
                 .willReturn(aResponse().withBody(cityString)));

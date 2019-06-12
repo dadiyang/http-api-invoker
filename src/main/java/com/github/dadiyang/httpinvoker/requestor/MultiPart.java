@@ -16,7 +16,7 @@ public class MultiPart {
     private List<Part> parts;
 
     public MultiPart() {
-        parts = new LinkedList<>();
+        parts = new LinkedList<Part>();
     }
 
     public MultiPart(List<Part> parts) {

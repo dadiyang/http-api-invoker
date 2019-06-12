@@ -7,7 +7,6 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -24,6 +23,10 @@ public class ParamUtils {
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Void.class);
+
+    private ParamUtils() {
+        throw new UnsupportedOperationException("utils should not be initialized!");
+    }
 
     /**
      * check if the clz is primary type, primary type's wrapper, String or Void
@@ -64,7 +67,7 @@ public class ParamUtils {
             return Collections.emptyMap();
         }
         JSONObject obj = JSON.parseObject(JSON.toJSONString(arg));
-        Map<String, String> map = new HashMap<>(obj.size(), 1);
+        Map<String, String> map = new HashMap<String, String>(obj.size(), 1);
         for (Map.Entry<String, Object> entry : obj.entrySet()) {
             map.put(entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
         }
@@ -91,7 +94,7 @@ public class ParamUtils {
             } else {
                 String value = entry.getValue() == null ? "" : entry.getValue().toString();
                 try {
-                    value = URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+                    value = URLEncoder.encode(value, "UTF-8");
                 } catch (UnsupportedEncodingException ignored) {
                 }
                 qs.append(entry.getKey()).append("=").append(value).append("&");

@@ -26,11 +26,11 @@ public class MultiSourcePropertyResolver implements PropertyResolver {
         if (resolvers == null) {
             throw new IllegalArgumentException("resolvers must not be null");
         }
-        this.resolvers = new LinkedHashSet<>(resolvers);
+        this.resolvers = new LinkedHashSet<PropertyResolver>(resolvers);
     }
 
     public MultiSourcePropertyResolver() {
-        resolvers = new LinkedHashSet<>();
+        resolvers = new LinkedHashSet<PropertyResolver>();
     }
 
     public Set<PropertyResolver> getResolvers() {

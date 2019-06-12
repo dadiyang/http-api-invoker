@@ -5,11 +5,10 @@ import com.github.dadiyang.httpinvoker.entity.City;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 public class CityUtil {
     public static List<City> createCities() {
-        List<City> cityList = new ArrayList<>();
+        List<City> cityList = new ArrayList<City>();
         cityList.add(new City(1, "北京"));
         cityList.add(new City(2, "上海"));
         cityList.add(new City(3, "广州"));
@@ -29,7 +28,7 @@ public class CityUtil {
 
     public static List<City> getCities(List<Integer> ids) {
         List<City> cities = createCities();
-        List<City> rs = new LinkedList<>();
+        List<City> rs = new LinkedList<City>();
         for (City city : cities) {
             if (ids.contains(city.getId())) {
                 rs.add(city);
@@ -41,7 +40,7 @@ public class CityUtil {
     public static City createCity(String name) {
         List<City> cities = createCities();
         for (City city : cities) {
-            if (Objects.equals(city.getName(), name)) {
+            if (ObjectUtils.equals(city.getName(), name)) {
                 return city;
             }
         }

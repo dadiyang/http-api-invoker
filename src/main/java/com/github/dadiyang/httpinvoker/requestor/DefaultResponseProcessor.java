@@ -1,11 +1,11 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
 import com.alibaba.fastjson.JSON;
+import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 
 import java.io.BufferedInputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Objects;
 
 /**
  * @author huangxuyang
@@ -15,8 +15,8 @@ public class DefaultResponseProcessor implements ResponseProcessor {
     @Override
     public Object process(HttpResponse response, Method method) {
         // not need a return value
-        if (Objects.equals(method.getReturnType(), Void.class)
-                || Objects.equals(method.getReturnType(), void.class)) {
+        if (ObjectUtils.equals(method.getReturnType(), Void.class)
+                || ObjectUtils.equals(method.getReturnType(), void.class)) {
             return null;
         }
         String body = response.getBody();

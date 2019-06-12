@@ -1,7 +1,5 @@
 package com.github.dadiyang.httpinvoker.entity;
 
-import java.util.Objects;
-
 public class ResultBean<T> {
     private int code;
     private T data;
@@ -57,15 +55,21 @@ public class ResultBean<T> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         ResultBean<?> that = (ResultBean<?>) o;
-        return code == that.code &&
-                Objects.equals(data, that.data) &&
-                Objects.equals(msg, that.msg);
+
+        if (code != that.code) return false;
+        if (data != null ? !data.equals(that.data) : that.data != null) return false;
+        return msg != null ? msg.equals(that.msg) : that.msg == null;
+
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(code, data, msg);
+        int result = code;
+        result = 31 * result + (data != null ? data.hashCode() : 0);
+        result = 31 * result + (msg != null ? msg.hashCode() : 0);
+        return result;
     }
+
 }
