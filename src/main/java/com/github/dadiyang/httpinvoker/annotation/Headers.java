@@ -4,13 +4,13 @@ import java.lang.annotation.*;
 
 /**
  * Indicates the parameter is a header map.
- * <p>
- * This annotation should only be annotated on parameter of Map&lt;String, String&gt; type
+ *
  * @author huangxuyang
  * date 2018/12/21
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
+@Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 @Documented
 public @interface Headers {
+    String[] value() default "";
 }
