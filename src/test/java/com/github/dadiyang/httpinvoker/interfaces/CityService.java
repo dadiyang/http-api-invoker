@@ -3,7 +3,9 @@ package com.github.dadiyang.httpinvoker.interfaces;
 
 import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.entity.City;
+import com.github.dadiyang.httpinvoker.entity.ComplicatedInfo;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
+import com.github.dadiyang.httpinvoker.enumeration.ReqMethod;
 import com.github.dadiyang.httpinvoker.requestor.HttpResponse;
 import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 import com.github.dadiyang.httpinvoker.requestor.Status;
@@ -37,20 +39,20 @@ public interface CityService {
     /**
      * 如果是集合类或数组的参数数据会直接当成请求体直接发送
      */
-    @HttpReq(value = "/save", method = "POST")
+    @HttpReq(value = "/save", method = ReqMethod.POST)
     @RetryPolicy(times = 2, retryForStatus = Status.SERVER_ERROR)
     boolean saveCities(List<City> cities);
 
     /**
      * 测试无需返回值的情况
      */
-    @HttpReq(value = "/{id}", method = "DELETE")
+    @HttpReq(value = "/{id}", method = ReqMethod.DELETE)
     void deleteCity(@Param("id") int id);
 
     /**
      * 默认使用GET方法，可以通过method指定请求方式
      */
-    @HttpReq(value = "/saveCity", method = "POST")
+    @HttpReq(value = "/saveCity", method = ReqMethod.POST)
     boolean saveCity(@Param("id") Integer id, @Param("name") String name);
 
     /**
@@ -164,4 +166,11 @@ public interface CityService {
     @HttpReq("/getCityByName")
     @ExpectedCode(value = 1, codeFieldName = "status")
     City getCityWithStatusCode(@Param("name") String name);
+
+    /**
+     * 测试复杂对象的提交
+     */
+    @Form
+    @HttpReq(value = "/getCityByComplicatedInfo", method = ReqMethod.POST)
+    City getCityByComplicatedInfo(ComplicatedInfo info);
 }

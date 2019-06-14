@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.github.dadiyang.httpinvoker.HttpApiProxyFactory;
 import com.github.dadiyang.httpinvoker.entity.City;
+import com.github.dadiyang.httpinvoker.entity.ComplicatedInfo;
 import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.entity.ResultBeanWithStatusAsCode;
 import com.github.dadiyang.httpinvoker.requestor.*;
@@ -41,9 +42,14 @@ public class CityServiceTest {
     public void setUp() throws Exception {
         System.setProperty("api.url.city.host", "http://localhost:" + PORT);
         System.setProperty("api.url.city.host2", "http://localhost:" + PORT);
-        HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory();
+        Requestor requestor = new HttpClientRequestor();
+        HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory.Builder().setRequestor(requestor).build();
         cityService = httpApiProxyFactory.getProxy(CityService.class);
-        cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
+        cityServiceWithResultBeanResponseProcessor = new HttpApiProxyFactory.Builder()
+                .setRequestor(requestor)
+                .setResponseProcessor(new ResultBeanResponseProcessor())
+                .build()
+                .getProxy(CityService.class);
         authKey = UUID.randomUUID().toString();
     }
 
@@ -187,11 +193,16 @@ public class CityServiceTest {
         String headerValue = "value11";
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 // 带了 header 的响应
-                .willReturn(okJson(JSON.toJSONString(mockCities)).withHeader(headerKey, headerValue)));
+                .willReturn(okJson(JSON.toJSONString(mockCities))
+                        .withHeader(headerKey, headerValue)
+                        .withHeader("Set-Cookie", "c1=c; path=\"/\", c2=cc; domain=\"localhost\"")
+                        .withHeader("Set-Cookie", "c3=ccc; path=\"/\", c2=cc; domain=\"localhost\"")));
         HttpResponse response = cityService.listCity();
         System.out.println("获取到headers:" + response.getHeaders());
         assertEquals(headerValue, response.getHeader(headerKey));
         assertEquals("application/json", response.getHeader("Content-Type"));
+        assertEquals("c", response.getCookie("c1"));
+        assertEquals("cc", response.getCookie("c2"));
         List<City> cityList = JSON.parseArray(response.getBody(), City.class);
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));
@@ -234,7 +245,6 @@ public class CityServiceTest {
                 .withQueryParam("id", equalTo("1"))
                 .withQueryParam("id", equalTo("2"))
                 .withQueryParam("id", equalTo("3"))
-                .withHeader("Content-Type", equalTo("application/json"))
                 .willReturn(aResponse().withBody(JSON.toJSONString(rs))));
         List<City> cities = cityService.getCities(cityIds);
         assertEquals(rs, cities);
@@ -415,8 +425,20 @@ public class CityServiceTest {
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityName(1);
         assertEquals(obj, cityString);
-
         obj = cityServiceWithResultBeanResponseProcessor.getCityName(1);
         assertEquals("北京", obj);
+    }
+
+    @Test
+    public void getCityByComplicatedInfo() {
+        String uri = "/city/getCityByComplicatedInfo";
+        List<City> cities = CityUtil.createCities();
+        City city = CityUtil.createCity(1);
+        ComplicatedInfo info = new ComplicatedInfo(cities, "OK", city);
+        wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                .withRequestBody(equalToJson(JSON.toJSONString(info)))
+                .willReturn(aResponse().withBody(JSON.toJSONString(city))));
+        City rs = cityService.getCityByComplicatedInfo(info);
+        assertEquals(city, rs);
     }
 }

@@ -94,9 +94,10 @@ public class HttpApiProxyFactory {
 
         public HttpApiProxyFactory build() {
             HttpApiProxyFactory factory = new HttpApiProxyFactory();
-            factory.requestor = requestor;
-            factory.responseProcessor = responseProcessor;
-            factory.requestPreprocessor = requestPreprocessor;
+            factory.requestor = requestor != null ? requestor : factory.requestor;
+            factory.responseProcessor = responseProcessor != null ? responseProcessor : factory.responseProcessor;
+            factory.requestPreprocessor = requestPreprocessor != null ? requestPreprocessor : factory.requestPreprocessor;
+            propertyResolvers.addPropertyResolver(factory.propertyResolver);
             factory.propertyResolver = propertyResolvers;
             return factory;
         }

@@ -2,7 +2,7 @@ package com.github.dadiyang.httpinvoker.requestor;
 
 import org.jsoup.Connection;
 
-import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +43,7 @@ public class JsoupHttpResponse extends HttpResponse {
     }
 
     @Override
-    public BufferedInputStream getBodyStream() {
+    public InputStream getBodyStream() {
         return response.bodyStream();
     }
 

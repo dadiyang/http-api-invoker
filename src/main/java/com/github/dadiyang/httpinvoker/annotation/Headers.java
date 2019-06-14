@@ -8,9 +8,9 @@ import java.lang.annotation.*;
  * @author huangxuyang
  * date 2018/12/21
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
-@Documented
 public @interface Headers {
     String[] value() default "";
 }

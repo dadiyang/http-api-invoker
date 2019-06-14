@@ -1,6 +1,6 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
-import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,7 +44,7 @@ public class HttpResponse {
      * Other body methods (like bufferUp, body, parse, etc) will not work in conjunction with this method.
      * <p>This method is useful for writing large responses to disk, without buffering them completely into memory first.</p>
      */
-    private BufferedInputStream bodyStream;
+    private InputStream bodyStream;
 
     private Map<String, List<String>> headers;
 
@@ -104,11 +104,11 @@ public class HttpResponse {
         this.bodyAsBytes = bodyAsBytes;
     }
 
-    public BufferedInputStream getBodyStream() {
+    public InputStream getBodyStream() {
         return bodyStream;
     }
 
-    public void setBodyStream(BufferedInputStream bodyStream) {
+    public void setBodyStream(InputStream bodyStream) {
         this.bodyStream = bodyStream;
     }
 
