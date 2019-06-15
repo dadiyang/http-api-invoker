@@ -9,10 +9,13 @@ import com.github.dadiyang.httpinvoker.entity.ResultBean;
 import com.github.dadiyang.httpinvoker.entity.ResultBeanWithStatusAsCode;
 import com.github.dadiyang.httpinvoker.requestor.*;
 import com.github.dadiyang.httpinvoker.util.CityUtil;
+import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,6 +24,10 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCities;
 import static com.github.dadiyang.httpinvoker.util.CityUtil.createCity;
@@ -29,20 +36,34 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.junit.Assert.*;
 
+@RunWith(Parameterized.class)
 public class CityServiceTest {
     private static final int PORT = 18888;
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(options().port(PORT));
     private CityService cityService;
     private CityService cityServiceWithResultBeanResponseProcessor;
-
+    private Requestor requestor;
     private String authKey;
+
+    public CityServiceTest(Requestor requestor) {
+        this.requestor = requestor;
+    }
+
+    @Parameterized.Parameters
+    public static Collection<Object[]> data() {
+        Collection<Object[]> data = new ArrayList<Object[]>();
+        data.add(new Object[]{new JsoupRequestor()});
+        data.add(new Object[]{new DefaultHttpRequestor()});
+        data.add(new Object[]{new HttpClientRequestor()});
+        return data;
+    }
 
     @Before
     public void setUp() throws Exception {
         System.setProperty("api.url.city.host", "http://localhost:" + PORT);
         System.setProperty("api.url.city.host2", "http://localhost:" + PORT);
-        Requestor requestor = new HttpClientRequestor();
+
         HttpApiProxyFactory httpApiProxyFactory = new HttpApiProxyFactory.Builder().setRequestor(requestor).build();
         cityService = httpApiProxyFactory.getProxy(CityService.class);
         cityServiceWithResultBeanResponseProcessor = new HttpApiProxyFactory.Builder()
@@ -202,7 +223,7 @@ public class CityServiceTest {
         assertEquals(headerValue, response.getHeader(headerKey));
         assertEquals("application/json", response.getHeader("Content-Type"));
         assertEquals("c", response.getCookie("c1"));
-        assertEquals("cc", response.getCookie("c2"));
+        assertEquals("ccc", response.getCookie("c3"));
         List<City> cityList = JSON.parseArray(response.getBody(), City.class);
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));
@@ -265,6 +286,27 @@ public class CityServiceTest {
     }
 
     @Test
+    public void uploadTest() throws IOException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        for (int i = 0; i < 100; i++) {
+            executorService.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    try {
+                        upload();
+                        multipartTest();
+                    } catch (Exception e) {
+                        fail(e.getMessage());
+                    }
+                    return null;
+                }
+            });
+        }
+        executorService.shutdown();
+        executorService.awaitTermination(3, TimeUnit.MINUTES);
+    }
+
+    @Test
     public void upload() throws IOException {
         String uri = "/city/picture/upload";
         String randomName = UUID.randomUUID().toString();
@@ -289,7 +331,7 @@ public class CityServiceTest {
     }
 
     @Test
-    public void multipartTest() throws IOException {
+    public void multipartTest() throws IOException, InterruptedException {
         String uri = "/city/files/upload";
         String randomName = UUID.randomUUID().toString();
         String fileName1 = "conf.properties";
@@ -304,7 +346,11 @@ public class CityServiceTest {
 
             byte[] bytes2 = new byte[in2.available()];
             in2.read(bytes2);
-
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 10000; i++) {
+                sb.append(UUID.randomUUID());
+            }
+            in1.read(sb.toString().getBytes());
             wireMockRule.stubFor(post(urlPathEqualTo(uri))
                     .withMultipartRequestBody(aMultipart("conf1").withBody(binaryEqualTo(bytes1)))
                     .withMultipartRequestBody(aMultipart("conf2").withBody(binaryEqualTo(bytes2)))
@@ -430,13 +476,18 @@ public class CityServiceTest {
     }
 
     @Test
-    public void getCityByComplicatedInfo() {
+    public void getCityByComplicatedInfo() throws UnsupportedEncodingException {
         String uri = "/city/getCityByComplicatedInfo";
         List<City> cities = CityUtil.createCities();
         City city = CityUtil.createCity(1);
         ComplicatedInfo info = new ComplicatedInfo(cities, "OK", city);
+        Map<String, String> map = ParamUtils.toMapStringString(info, "");
+        StringBuilder expectedRequestBody = new StringBuilder();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            expectedRequestBody.append(URLEncoder.encode(entry.getKey(), "UTF-8")).append("=").append(URLEncoder.encode(entry.getValue(), "UTF-8")).append("&");
+        }
         wireMockRule.stubFor(post(urlPathEqualTo(uri))
-                .withRequestBody(equalToJson(JSON.toJSONString(info)))
+                .withRequestBody(equalTo(expectedRequestBody.substring(0, expectedRequestBody.length() - 1)))
                 .willReturn(aResponse().withBody(JSON.toJSONString(city))));
         City rs = cityService.getCityByComplicatedInfo(info);
         assertEquals(city, rs);

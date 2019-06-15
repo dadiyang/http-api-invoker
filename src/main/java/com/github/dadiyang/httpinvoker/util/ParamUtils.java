@@ -3,8 +3,10 @@ package com.github.dadiyang.httpinvoker.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
+import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.net.URLEncoder;
 import java.util.*;
@@ -20,6 +22,9 @@ public class ParamUtils {
     private static final char UPPER_Z = 'Z';
     private static final char LOWER_A = 'a';
     private static final char LOWER_Z = 'z';
+    private static final String FILE_NAME = "fileName";
+    private static final String DEFAULT_UPLOAD_FORM_KEY = "media";
+    private static final String FORM_KEY = "formKey";
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Void.class);
@@ -52,24 +57,63 @@ public class ParamUtils {
             return false;
         }
         return arg.getClass().isArray()
-                || arg instanceof Collection
-                || arg instanceof Array;
+                || arg instanceof Collection;
     }
 
     /**
      * convert an object to Map&lt;String, String&gt;
      *
-     * @param arg object to be converted
-     * @return Map&lt;String, String&gt; represent the arg
+     * @param value  object to be converted
+     * @param prefix key's prefix
+     * @return Map&lt;String, String&gt; represent the value
      */
-    public static Map<String, String> toMapStringString(Object arg) {
-        if (arg == null) {
+    public static Map<String, String> toMapStringString(Object value, String prefix) {
+        if (value == null) {
             return Collections.emptyMap();
         }
-        JSONObject obj = JSON.parseObject(JSON.toJSONString(arg));
-        Map<String, String> map = new HashMap<String, String>(obj.size(), 1);
-        for (Map.Entry<String, Object> entry : obj.entrySet()) {
-            map.put(entry.getKey(), entry.getValue() == null ? "" : entry.getValue().toString());
+        if (isBasicType(value.getClass())) {
+            return Collections.singletonMap(prefix, String.valueOf(value));
+        }
+        Map<String, String> map = new HashMap<String, String>();
+        if (value.getClass().isArray()) {
+            for (int i = 0; i < Array.getLength(value); i++) {
+                String key = prefix + "[" + i++ + "]";
+                Object item = Array.get(value, 0);
+                if (isBasicType(item.getClass())) {
+                    map.put(prefix + "[" + i + "]", String.valueOf(item));
+                } else {
+                    map.putAll(toMapStringString(item, key));
+                }
+
+            }
+        } else if (value instanceof Collection) {
+            Collection collection = (Collection) value;
+            Iterator it = collection.iterator();
+            int i = 0;
+            while (it.hasNext()) {
+                String key = prefix + "[" + i++ + "]";
+                Object item = it.next();
+                if (isBasicType(item.getClass())) {
+                    map.put(prefix + "[" + i++ + "]", String.valueOf(item));
+                } else {
+                    map.putAll(toMapStringString(item, key));
+                }
+            }
+        } else {
+            JSONObject obj = JSON.parseObject(JSON.toJSONString(value));
+            for (Map.Entry<String, Object> entry : obj.entrySet()) {
+                String key;
+                if (prefix == null || prefix.isEmpty()) {
+                    key = entry.getKey();
+                } else {
+                    key = prefix + "[" + entry.getKey() + "]";
+                }
+                if (isBasicType(value.getClass())) {
+                    map.put(key, String.valueOf(value));
+                } else {
+                    map.putAll(toMapStringString(entry.getValue(), key));
+                }
+            }
         }
         return map;
     }
@@ -127,5 +171,44 @@ public class ParamUtils {
             return c;
         }
         return changeCase(c.charAt(0)) + c.substring(1);
+    }
+
+    public static MultiPart convertInputStreamAndFile(HttpRequest request) throws IOException {
+        Map<String, Object> paramMap = request.getData();
+        String formKey = DEFAULT_UPLOAD_FORM_KEY;
+        if (request.getFileFormKey() != null
+                && !request.getFileFormKey().isEmpty()) {
+            formKey = request.getFileFormKey();
+        } else if (paramMap != null && paramMap.containsKey(FORM_KEY)) {
+            formKey = paramMap.get(FORM_KEY).toString();
+        }
+        List<MultiPart.Part> parts = new ArrayList<MultiPart.Part>();
+        String fileName = FILE_NAME;
+        if (paramMap != null) {
+            for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() != null) {
+                    if (ObjectUtils.equals(entry.getKey(), FILE_NAME)) {
+                        fileName = String.valueOf(entry.getValue());
+                    }
+                    parts.add(new MultiPart.Part(entry.getKey(), String.valueOf(entry.getValue())));
+                }
+            }
+        }
+        InputStream in;
+        if (File.class.isAssignableFrom(request.getBody().getClass())) {
+            File file = (File) request.getBody();
+            in = new FileInputStream(file);
+            fileName = file.getName();
+        } else {
+            in = (InputStream) request.getBody();
+        }
+        parts.add(new MultiPart.Part(formKey, fileName, in));
+        return new MultiPart(parts);
+    }
+
+    public static boolean isUploadRequest(Object bodyParam) {
+        return bodyParam != null && (bodyParam instanceof MultiPart
+                || InputStream.class.isAssignableFrom(bodyParam.getClass())
+                || File.class.isAssignableFrom(bodyParam.getClass()));
     }
 }

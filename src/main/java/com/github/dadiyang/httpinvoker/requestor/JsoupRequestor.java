@@ -7,11 +7,7 @@ import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.github.dadiyang.httpinvoker.util.ParamUtils.*;
@@ -28,9 +24,6 @@ import static org.jsoup.Connection.Response;
  */
 public class JsoupRequestor implements Requestor {
     private static final Logger log = LoggerFactory.getLogger(JsoupRequestor.class);
-    private static final String FILE_NAME = "fileName";
-    private static final String DEFAULT_UPLOAD_FORM_KEY = "media";
-    private static final String FORM_KEY = "formKey";
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String APPLICATION_JSON = "application/json";
 
@@ -80,7 +73,7 @@ public class JsoupRequestor implements Requestor {
                     if (useJson(request, bodyParam)) {
                         response = conn.requestBody(JSON.toJSONString(bodyParam)).execute();
                     } else {
-                        Map<String, String> map = toMapStringString(bodyParam);
+                        Map<String, String> map = toMapStringString(bodyParam, "");
                         response = conn.data(map).execute();
                     }
                 }
@@ -92,7 +85,7 @@ public class JsoupRequestor implements Requestor {
                 if (useJson(request, data)) {
                     response = conn.requestBody(JSON.toJSONString(data)).execute();
                 } else {
-                    Map<String, String> map = toMapStringString(data);
+                    Map<String, String> map = toMapStringString(data, "");
                     response = conn.data(map).execute();
                 }
             }
@@ -125,12 +118,6 @@ public class JsoupRequestor implements Requestor {
         }
     }
 
-    private boolean isUploadRequest(Object bodyParam) {
-        return bodyParam != null && (bodyParam instanceof MultiPart
-                || InputStream.class.isAssignableFrom(bodyParam.getClass())
-                || File.class.isAssignableFrom(bodyParam.getClass()));
-    }
-
     /**
      * @param request the request
      */
@@ -147,8 +134,9 @@ public class JsoupRequestor implements Requestor {
         // handle MultiPart
         if (body instanceof MultiPart) {
             return handleMultiPart(conn, (MultiPart) body);
+        } else {
+            return handleMultiPart(conn, convertInputStreamAndFile(request));
         }
-        return handleInputStreamAndFile(request, conn);
     }
 
     private Response handleMultiPart(Connection conn, MultiPart body) throws IOException {
@@ -162,42 +150,6 @@ public class JsoupRequestor implements Requestor {
                 conn.data(part.getKey(), part.getValue());
             }
         }
-        return conn.execute();
-    }
-
-    private Response handleInputStreamAndFile(HttpRequest request, Connection conn) throws IOException {
-        Map<String, Object> paramMap = request.getData();
-        String formKey = DEFAULT_UPLOAD_FORM_KEY;
-        if (request.getFileFormKey() != null
-                && !request.getFileFormKey().isEmpty()) {
-            formKey = request.getFileFormKey();
-        } else if (paramMap != null && paramMap.containsKey(FORM_KEY)) {
-            formKey = paramMap.get(FORM_KEY).toString();
-        }
-        Map<String, String> params = new HashMap<String, String>();
-        if (paramMap != null) {
-            for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
-                if (entry.getKey() != null && entry.getValue() != null) {
-                    params.put(entry.getKey(), String.valueOf(entry.getValue()));
-                }
-            }
-        }
-        String fileName = "fileName";
-        InputStream in;
-        if (File.class.isAssignableFrom(request.getBody().getClass())) {
-            File file = (File) request.getBody();
-            in = new FileInputStream(file);
-            fileName = file.getName();
-        } else {
-            in = (InputStream) request.getBody();
-        }
-        if (!params.isEmpty()) {
-            conn.data(params);
-            if (params.containsKey(FILE_NAME)) {
-                fileName = params.get(FILE_NAME);
-            }
-        }
-        conn.data(formKey, fileName, in);
         return conn.execute();
     }
 }

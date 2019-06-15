@@ -51,6 +51,13 @@ public class HttpApiProxyFactoryTest {
                         && args.length == 1) {
                     return ObjectUtils.equals("Env1", args[0]);
                 }
+
+                if (ObjectUtils.equals("hashCode", method.getName())) {
+                    return -1;
+                }
+                if (ObjectUtils.equals("equals", method.getName()) && args.length == 1) {
+                    return true;
+                }
                 return null;
             }
         });

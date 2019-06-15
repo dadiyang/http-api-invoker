@@ -109,6 +109,7 @@ public interface CityService {
      * @param in       输入流
      */
     @HttpReq(value = "/picture/upload", method = "POST")
+    @RetryPolicy(times = 0)
     String upload(@Param("fileName") String fileName,
                   @Param(value = "media") InputStream in);
 
@@ -118,6 +119,7 @@ public interface CityService {
      * @param multiPart 表单
      */
     @HttpReq(value = "/files/upload", method = "POST")
+    @RetryPolicy(times = 0)
     String multiPartForm(MultiPart multiPart);
 
     /**

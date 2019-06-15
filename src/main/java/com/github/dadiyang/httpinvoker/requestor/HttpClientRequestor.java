@@ -2,9 +2,11 @@ package com.github.dadiyang.httpinvoker.requestor;
 
 import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
+import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import com.github.dadiyang.httpinvoker.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpMessage;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.BasicHttpEntity;
@@ -12,22 +14,21 @@ import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static com.github.dadiyang.httpinvoker.enumeration.ReqMethod.*;
-import static com.github.dadiyang.httpinvoker.util.ParamUtils.toMapStringString;
-import static com.github.dadiyang.httpinvoker.util.ParamUtils.toQueryString;
+import static com.github.dadiyang.httpinvoker.util.ParamUtils.*;
 
 /**
  * an http requestor base on HttpClient
@@ -47,7 +48,13 @@ public class HttpClientRequestor implements Requestor {
     }
 
     public HttpClientRequestor() {
-        httpClient = HttpClients.createDefault();
+        httpClient = createHttpClient();
+    }
+
+    private CloseableHttpClient createHttpClient() {
+        return HttpClients.custom()
+                .setConnectionManager(new PoolingHttpClientConnectionManager())
+                .build();
     }
 
     @Override
@@ -113,27 +120,43 @@ public class HttpClientRequestor implements Requestor {
     }
 
     private HttpResponse sendPost(HttpRequest request) throws IOException {
+        // handle MultiPart
+        if (isUploadRequest(request.getBody())) {
+            MultiPart multiPart;
+            if (!(request.getBody() instanceof MultiPart)) {
+                multiPart = ParamUtils.convertInputStreamAndFile(request);
+            } else {
+                multiPart = (MultiPart) request.getBody();
+            }
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.setLaxMode();
+            for (MultiPart.Part part : multiPart.getParts()) {
+                if (part.getInputStream() != null) {
+                    builder.addBinaryBody(part.getKey(), part.getInputStream(), ContentType.DEFAULT_BINARY, part.getValue());
+                } else {
+                    ContentType contentType = ContentType.create("text/plain", "UTF-8");
+                    builder.addTextBody(part.getKey(), part.getValue(), contentType);
+                }
+            }
+            HttpEntity entity = builder.build();
+            HttpPost httpPost = new HttpPost(request.getUrl());
+            httpPost.setEntity(entity);
+            return sendMultiPartRequest(request, httpPost);
+        }
         HttpEntity entity = createHttpEntity(request);
         HttpPost httpPost = new HttpPost(request.getUrl());
         httpPost.setEntity(entity);
         return sendRequest(request, httpPost);
     }
 
-    private HttpEntity createHttpEntity(HttpRequest request) throws UnsupportedEncodingException {
+
+    private HttpEntity createHttpEntity(HttpRequest request) throws IOException {
         HttpEntity entity;
-        // handle MultiPart
-        if (request.getBody() instanceof MultiPart) {
-            MultiPart multiPart = (MultiPart) request.getBody();
-            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-            for (MultiPart.Part part : multiPart.getParts()) {
-                builder.addPart(part.getKey(), new InputStreamBody(part.getInputStream(), part.getValue()));
-            }
-            return builder.build();
-        }
+        // handle x-www-form-urlencoded
         if (request.getHeaders() != null
                 && ObjectUtils.equals(FORM_URLENCODED, request.getHeaders().get(CONTENT_TYPE))) {
             List<BasicNameValuePair> parameters = new ArrayList<BasicNameValuePair>();
-            Map<String, String> map = toMapStringString(request.getData());
+            Map<String, String> map = toMapStringString(request.getData(), "");
             for (Map.Entry<String, String> entry : map.entrySet()) {
                 parameters.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
             }
@@ -161,11 +184,36 @@ public class HttpClientRequestor implements Requestor {
     }
 
     private HttpResponse sendRequest(HttpRequest request, HttpRequestBase httpRequestBase) throws IOException {
-        addHeaders(request, httpRequestBase);
-        addCookies(request, httpRequestBase);
+        prepare(request, httpRequestBase);
         CloseableHttpResponse response = httpClient.execute(httpRequestBase);
         response.setEntity(new BufferedHttpEntity(response.getEntity()));
+        EntityUtils.consume(response.getEntity());
         return new HttpClientResponse(response);
+    }
+
+    private HttpResponse sendMultiPartRequest(HttpRequest request, HttpRequestBase httpRequestBase) throws IOException {
+        prepare(request, httpRequestBase);
+        CloseableHttpClient httpClient = null;
+        try {
+            httpClient = createHttpClient();
+            CloseableHttpResponse response = httpClient.execute(httpRequestBase);
+            response.setEntity(new BufferedHttpEntity(response.getEntity()));
+            EntityUtils.consume(response.getEntity());
+            return new HttpClientResponse(response);
+        } finally {
+            if (httpClient != null) {
+                httpClient.close();
+            }
+        }
+    }
+
+    private void prepare(HttpRequest request, HttpRequestBase httpRequestBase) {
+        addHeaders(request, httpRequestBase);
+        addCookies(request, httpRequestBase);
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(request.getTimeout())
+                .build();
+        httpRequestBase.setConfig(requestConfig);
     }
 
     private void addCookies(HttpRequest request, HttpMessage msg) {
@@ -187,7 +235,5 @@ public class HttpClientRequestor implements Requestor {
                 msg.addHeader(entry.getKey(), entry.getValue());
             }
         }
-
-
     }
 }
