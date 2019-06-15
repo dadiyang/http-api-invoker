@@ -10,6 +10,7 @@ import com.github.dadiyang.httpinvoker.entity.ResultBeanWithStatusAsCode;
 import com.github.dadiyang.httpinvoker.requestor.*;
 import com.github.dadiyang.httpinvoker.util.CityUtil;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -156,6 +157,49 @@ public class CityServiceTest {
                 .withRequestBody(equalToJson(JSON.toJSONString(body)))
                 .willReturn(aResponse().withBody("true")));
         boolean result = cityService.updateCity(id, name);
+        assertTrue(result);
+    }
+
+    @Test
+    public void patchCity() {
+        int id = 1;
+        String name = "北京";
+        String uri = "/city/patchCity";
+        City city = new City(id, name);
+        if (requestor instanceof JsoupRequestor) {
+            // Jsoup does not support real PATCH method, but it can using X-HTTP-Method-Override header to send a fake PATCH
+            wireMockRule.stubFor(post(urlEqualTo(uri))
+                    .withHeader("X-HTTP-Method-Override", equalTo("PATCH"))
+                    .willReturn(aResponse().withBody("true")));
+        } else {
+            wireMockRule.stubFor(patch(urlEqualTo(uri))
+                    .withRequestBody(equalToJson(JSON.toJSONString(city)))
+                    .willReturn(aResponse().withBody("true")));
+        }
+        boolean result = cityService.patchCity(city);
+        assertTrue(result);
+    }
+
+    @Test
+    public void testHead() {
+        String uri = "/city/head";
+        wireMockRule.stubFor(WireMock.head(urlEqualTo(uri)).willReturn(ok()));
+        cityService.head();
+    }
+
+    @Test
+    public void testTrace() {
+        String uri = "/city/trace";
+        wireMockRule.stubFor(trace(urlEqualTo(uri)).willReturn(aResponse().withBody("true")));
+        boolean result = cityService.trace();
+        assertTrue(result);
+    }
+
+    @Test
+    public void testOptions() {
+        String uri = "/city/options";
+        wireMockRule.stubFor(WireMock.options(urlEqualTo(uri)).willReturn(aResponse().withBody("true")));
+        boolean result = cityService.options();
         assertTrue(result);
     }
 
@@ -455,6 +499,13 @@ public class CityServiceTest {
         String uri = "/city/getCityObject";
         String cityString = JSON.toJSONString(new ResultBean<String>(0, "123"));
         wireMockRule.stubFor(get(urlEqualTo(uri))
+                // 加在类上的头和cookie
+                .withHeader("globalHeader1", equalTo("ok"))
+                .withHeader("globalHeader2", equalTo("yes"))
+                .withHeader("h3", equalTo("haha"))
+                .withCookie("globalCookie", equalTo("ok"))
+                // 类上的 UserAgent 注解
+                .withHeader("User-Agent", equalTo("JUnit"))
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityObject();
         assertEquals(obj, cityString);
@@ -468,6 +519,16 @@ public class CityServiceTest {
         String cityString = JSON.toJSONString(new ResultBean<String>(0, "北京"));
         wireMockRule.stubFor(get(urlPathEqualTo(uri))
                 .withQueryParam("id", equalTo("1"))
+                // 加在类上的头和cookie，如果key相同会被方法上的覆盖
+                .withHeader("happy", equalTo("done"))
+                .withHeader("h3", equalTo("nice"))
+                .withHeader("globalHeader1", equalTo("ok"))
+                .withHeader("globalHeader2", equalTo("yes"))
+                .withCookie("globalCookie", equalTo("bad"))
+                .withCookie("auth", equalTo("ok"))
+                // 类上的 UserAgent 注解，会被方法上的注解覆盖
+                .withHeader("User-Agent", equalTo("cityAgent"))
+                .withHeader("Content-Type", equalTo("text/plain"))
                 .willReturn(aResponse().withBody(cityString)));
         Object obj = cityService.getCityName(1);
         assertEquals(obj, cityString);

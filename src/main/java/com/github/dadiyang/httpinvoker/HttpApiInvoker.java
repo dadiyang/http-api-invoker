@@ -172,13 +172,24 @@ public class HttpApiInvoker implements InvocationHandler {
     }
 
     private void addCookies(Method method, HttpRequest request) {
-        Cookies cookies = getAnn(method, Cookies.class);
+        if (method.getDeclaringClass().isAnnotationPresent(Cookies.class)) {
+            Cookies headers = method.getDeclaringClass().getAnnotation(Cookies.class);
+            addCookies(request, headers);
+        }
+        // method's cookies will cover those with same key
+        if (method.isAnnotationPresent(Cookies.class)) {
+            Cookies headers = method.getAnnotation(Cookies.class);
+            addCookies(request, headers);
+        }
+    }
+
+    private void addCookies(HttpRequest request, Cookies cookies) {
         if (cookies != null && cookies.keys().length > 0) {
-            if (cookies.values().length != cookies.keys().length) {
+            if (cookies.values().length == cookies.keys().length) {
                 for (int i = 0; i < cookies.keys().length; i++) {
                     String key = cookies.keys()[i];
                     String value = cookies.values()[i];
-                    request.addHeader(key, value);
+                    request.addCookie(key, value);
                 }
             } else {
                 throw new IllegalStateException("cookies' keys and values must one-to-one correspondence");
@@ -186,10 +197,21 @@ public class HttpApiInvoker implements InvocationHandler {
         }
     }
 
-    private Headers addHeaders(Method method, HttpRequest request) {
-        Headers headers = getAnn(method, Headers.class);
+    private void addHeaders(Method method, HttpRequest request) {
+        if (method.getDeclaringClass().isAnnotationPresent(Headers.class)) {
+            Headers headers = method.getDeclaringClass().getAnnotation(Headers.class);
+            addHeaders(request, headers);
+        }
+        // method's headers will cover those with same key
+        if (method.isAnnotationPresent(Headers.class)) {
+            Headers headers = method.getAnnotation(Headers.class);
+            addHeaders(request, headers);
+        }
+    }
+
+    private void addHeaders(HttpRequest request, Headers headers) {
         if (headers != null && headers.keys().length > 0) {
-            if (headers.values().length != headers.keys().length) {
+            if (headers.values().length == headers.keys().length) {
                 for (int i = 0; i < headers.keys().length; i++) {
                     String key = headers.keys()[i];
                     String value = headers.values()[i];
@@ -199,7 +221,6 @@ public class HttpApiInvoker implements InvocationHandler {
                 throw new IllegalStateException("headers' keys and values must one-to-one correspondence");
             }
         }
-        return headers;
     }
 
     private <T extends Annotation> T getAnn(Method method, Class<T> ann) {

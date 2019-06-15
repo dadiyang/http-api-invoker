@@ -83,6 +83,10 @@ public class JsoupRequestor implements Requestor {
                 response = conn.execute();
             } else {
                 if (useJson(request, data)) {
+                    if (m == Method.PATCH) {
+                        // use X-HTTP-Method-Override header to send a fake PATCH request
+                        conn.method(Method.POST).header("X-HTTP-Method-Override", "PATCH");
+                    }
                     response = conn.requestBody(JSON.toJSONString(data)).execute();
                 } else {
                     Map<String, String> map = toMapStringString(data, "");
@@ -106,6 +110,7 @@ public class JsoupRequestor implements Requestor {
     private boolean useJson(HttpRequest request, Object param) {
         // collection can only be send by json currently
         return isCollection(param) || request.getHeaders() == null
+                || !request.getHeaders().containsKey(CONTENT_TYPE)
                 || ObjectUtils.equals(request.getHeaders().get(CONTENT_TYPE), APPLICATION_JSON);
     }
 

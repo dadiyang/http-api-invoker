@@ -22,6 +22,9 @@ import java.util.Map;
  */
 @HttpApi("${api.url.city.host}/city")
 @RetryPolicy
+@Headers(keys = {"globalHeader1", "globalHeader2", "h3"}, values = {"ok", "yes", "haha"})
+@Cookies(keys = "globalCookie", values = "ok")
+@UserAgent("JUnit")
 public interface CityService {
     /**
      * 使用URI，会自动添加prefix指定的前缀
@@ -160,6 +163,10 @@ public interface CityService {
      * 测试返回值为 String 类型
      */
     @HttpReq("/getCityName")
+    @Headers(keys = {"happy", "h3"}, values = {"done", "nice"})
+    @Cookies(keys = {"globalCookie", "auth"}, values = {"bad", "ok"})
+    @UserAgent("cityAgent")
+    @ContentType("text/plain")
     String getCityName(@Param("id") int id);
 
     /**
@@ -175,4 +182,19 @@ public interface CityService {
     @Form
     @HttpReq(value = "/getCityByComplicatedInfo", method = ReqMethod.POST)
     City getCityByComplicatedInfo(ComplicatedInfo info);
+
+    @HttpReq(value = "/patchCity", method = ReqMethod.PATCH)
+    boolean patchCity(City city);
+
+    @HttpReq(value = "/head", method = ReqMethod.HEAD)
+    void head();
+
+    @HttpReq(value = "/trace", method = ReqMethod.TRACE)
+    boolean trace();
+
+    @HttpReq(value = "/options", method = ReqMethod.OPTIONS)
+    boolean options();
+
+    @HttpReq(value = "/invalid", method = "xxx")
+    void invalidMethod();
 }

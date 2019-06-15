@@ -186,8 +186,10 @@ public class HttpClientRequestor implements Requestor {
     private HttpResponse sendRequest(HttpRequest request, HttpRequestBase httpRequestBase) throws IOException {
         prepare(request, httpRequestBase);
         CloseableHttpResponse response = httpClient.execute(httpRequestBase);
-        response.setEntity(new BufferedHttpEntity(response.getEntity()));
-        EntityUtils.consume(response.getEntity());
+        if (response.getEntity() != null) {
+            response.setEntity(new BufferedHttpEntity(response.getEntity()));
+            EntityUtils.consume(response.getEntity());
+        }
         return new HttpClientResponse(response);
     }
 

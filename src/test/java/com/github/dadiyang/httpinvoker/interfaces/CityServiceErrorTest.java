@@ -147,4 +147,9 @@ public class CityServiceErrorTest {
         CityService cityServiceWithResultBeanResponseProcessor = HttpApiProxyFactory.newProxy(CityService.class, new ResultBeanResponseProcessor());
         cityServiceWithResultBeanResponseProcessor.getCityWithStatusCode(cityName);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void invalidMethod() {
+        cityService.invalidMethod();
+    }
 }
