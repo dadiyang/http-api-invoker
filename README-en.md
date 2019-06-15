@@ -13,6 +13,8 @@ The only thing we need to do is defining the interface.
 3. Upload and download file is supported.
 4. Autowired annotation is supported if integrate with Spring.
 5. Well documented and unit tested.
+6. Mock supported
+7. JDK6+ (1.2.0 and above)
 
 # TECHNOLOGY STACK
  
@@ -29,7 +31,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.9</version>
+    <version>1.2.0</version>
  </dependency>
 ```
 

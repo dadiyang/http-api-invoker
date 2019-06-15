@@ -16,6 +16,7 @@
 4. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
 5. 完善的文档用例和单元测试
 6. 支持 Mock
+7. JDK6+（注：1.2.0版本之前JDK8）
 
 # 技术栈
  
@@ -32,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.1.9</version>
+    <version>1.2.0</version>
  </dependency>
 ```
 
@@ -305,9 +306,13 @@ isBody: 指定是否将该参数的所有字段都做为单独的参数
 
 指定方法参数为 Headers，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
 
+打在方法上和类上则 keys 和 values 来指定请求头，keys 和 values 数组元素必须一一对应
+
 ## @Cookies
 
 指定方法参数为 Cookies，目前只允许打在类型为 `Map<String, String>` 的参数上，否则会抛出 `IllegalArgumentException`
+
+打在方法上和类上则 keys 和 values 来指定 cookie，keys 和 values 数组元素必须一一对应
 
 ## @Form
 
