@@ -10,7 +10,10 @@ import java.lang.annotation.*;
  * date 2018/12/21
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
+@Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 @Documented
 public @interface Cookies {
+    String[] keys() default "";
+
+    String[] values() default "";
 }

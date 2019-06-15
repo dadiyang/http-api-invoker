@@ -12,5 +12,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 public @interface Headers {
-    String[] value() default "";
+    String[] keys() default "";
+
+    String[] values() default "";
 }

@@ -39,6 +39,7 @@ public class HttpApiInvoker implements InvocationHandler {
     private static final int OK_CODE_H = 300;
     private static final String HTTP_API_PREFIX = "$HttpApi$";
     private static final String TO_STRING = "toString";
+    private static final String CONTENT_TYPE = "Content-Type";
     private Requestor requestor;
     private PropertyResolver propertyResolver;
     private Class<?> clazz;
@@ -90,7 +91,7 @@ public class HttpApiInvoker implements InvocationHandler {
             for (Object arg : args) {
                 if (arg instanceof MultiPart) {
                     if (!"POST".equalsIgnoreCase(request.getMethod())) {
-                        throw new IllegalStateException("unsupported request method form multipart form: " + request.getMethod());
+                        throw new IllegalStateException("unsupported request method for multipart form: " + request.getMethod());
                     }
                     request.setBody(arg);
                 }
@@ -116,11 +117,11 @@ public class HttpApiInvoker implements InvocationHandler {
             request.setUrl(url);
             request.setData(params);
         }
-        if (clazz.isAnnotationPresent(Form.class)
-                || method.isAnnotationPresent(Form.class)) {
-            // a form request
-            request.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        }
+        addHeaders(method, request);
+        addCookies(method, request);
+        addContentType(method, request);
+        addUserAgent(method, request);
+
         if (requestPreprocessor != null) {
             requestPreprocessor.process(request);
         }
@@ -148,6 +149,66 @@ public class HttpApiInvoker implements InvocationHandler {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
         return returnValue;
+    }
+
+    private void addContentType(Method method, HttpRequest request) {
+        if (clazz.isAnnotationPresent(Form.class)
+                || method.isAnnotationPresent(Form.class)) {
+            // a form request
+            request.addHeader(CONTENT_TYPE, "application/x-www-form-urlencoded");
+            return;
+        }
+        ContentType contentType = getAnn(method, ContentType.class);
+        if (contentType != null && !contentType.value().isEmpty()) {
+            request.addHeader(CONTENT_TYPE, contentType.value());
+        }
+    }
+
+    private void addUserAgent(Method method, HttpRequest request) {
+        UserAgent userAgent = getAnn(method, UserAgent.class);
+        if (userAgent != null && !userAgent.value().isEmpty()) {
+            request.addHeader("User-Agent", userAgent.value());
+        }
+    }
+
+    private void addCookies(Method method, HttpRequest request) {
+        Cookies cookies = getAnn(method, Cookies.class);
+        if (cookies != null && cookies.keys().length > 0) {
+            if (cookies.values().length != cookies.keys().length) {
+                for (int i = 0; i < cookies.keys().length; i++) {
+                    String key = cookies.keys()[i];
+                    String value = cookies.values()[i];
+                    request.addHeader(key, value);
+                }
+            } else {
+                throw new IllegalStateException("cookies' keys and values must one-to-one correspondence");
+            }
+        }
+    }
+
+    private Headers addHeaders(Method method, HttpRequest request) {
+        Headers headers = getAnn(method, Headers.class);
+        if (headers != null && headers.keys().length > 0) {
+            if (headers.values().length != headers.keys().length) {
+                for (int i = 0; i < headers.keys().length; i++) {
+                    String key = headers.keys()[i];
+                    String value = headers.values()[i];
+                    request.addHeader(key, value);
+                }
+            } else {
+                throw new IllegalStateException("headers' keys and values must one-to-one correspondence");
+            }
+        }
+        return headers;
+    }
+
+    private <T extends Annotation> T getAnn(Method method, Class<T> ann) {
+        if (method.isAnnotationPresent(ann)) {
+            return method.getAnnotation(ann);
+        } else if (method.getDeclaringClass().isAnnotationPresent(ann)) {
+            return method.getDeclaringClass().getAnnotation(ann);
+        }
+        return null;
     }
 
     private String prepareUrl(HttpReq anno) {
