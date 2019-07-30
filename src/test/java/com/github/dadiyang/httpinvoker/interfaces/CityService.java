@@ -11,6 +11,7 @@ import com.github.dadiyang.httpinvoker.requestor.MultiPart;
 import com.github.dadiyang.httpinvoker.requestor.Status;
 
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -197,4 +198,10 @@ public interface CityService {
 
     @HttpReq(value = "/invalid", method = "xxx")
     void invalidMethod();
+
+    /**
+     * 测试 date 类型参数及返回值
+     */
+    @HttpReq(value = "/date", method = ReqMethod.POST)
+    Date getDate(@Param("date") Date date);
 }

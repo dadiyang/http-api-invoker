@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
+import com.github.dadiyang.httpinvoker.exception.UnexpectedResultException;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<Class<?>, Boolean>();
 
     @Override
-    public Object process(HttpResponse response, Method method) {
+    public Object process(HttpResponse response, Method method) throws UnexpectedResultException {
         // 对返回值进行解析，code 为 0，则返回反序列化 data 的值，否则抛出异常
         String rs = response.getBody();
         // 以下几种情况下，无需解析响应
@@ -72,9 +73,8 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
             String uri = req != null ? req.value() : method.getName();
             // 兼容两种错误信息的写法
             String errMsg = obj.containsKey(MESSAGE) ? obj.getString(MESSAGE) : obj.getString(MSG);
-            String msg = "请求api失败, uri: " + uri + ", 错误信息: " + errMsg;
-            log.warn(msg);
-            throw new IllegalStateException(msg);
+            log.warn("请求api失败, uri: " + uri + ", 错误信息: " + errMsg);
+            throw new UnexpectedResultException(errMsg);
         }
     }
 
@@ -149,9 +149,9 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         } else {
             List<Field> fields = new ArrayList<Field>();
             Class<?> type = returnType;
-            while (type != Object.class && !type.isInterface()) {
+            while (type != null && type != Object.class && !type.isInterface()) {
                 fields.addAll(Arrays.asList(type.getDeclaredFields()));
-                type = returnType.getSuperclass();
+                type = type.getSuperclass();
             }
             return fields.toArray(new Field[]{});
         }

@@ -16,7 +16,7 @@
 4. 若使用 Spring ，则可以使用 Autowired 自动注入接口的实现
 5. 完善的文档用例和单元测试
 6. 支持 Mock
-7. JDK6+（注：1.2.0版本之前JDK8）
+7. JDK6+（注：1.2.0版本后支持JDK6，之前的版本必须JDK8）
 
 # 技术栈
  
@@ -33,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
  </dependency>
 ```
 

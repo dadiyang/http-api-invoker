@@ -553,4 +553,24 @@ public class CityServiceTest {
         City rs = cityService.getCityByComplicatedInfo(info);
         assertEquals(city, rs);
     }
+
+    @Test
+    public void getDate() throws UnsupportedEncodingException {
+        String uri = "/city/date";
+        Map<String, Object> param = new HashMap<String, Object>();
+        Date now = new Date();
+        param.put("date", now);
+        wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                .withRequestBody(equalToJson(JSON.toJSONString(param)))
+                .willReturn(aResponse().withBody(JSON.toJSONString(now))));
+        Date date = cityService.getDate(now);
+        assertEquals(date.getTime(), now.getTime());
+
+        ResultBean<Date> resultBean = new ResultBean<Date>(0, now);
+        wireMockRule.stubFor(post(urlPathEqualTo(uri))
+                .withRequestBody(equalToJson(JSON.toJSONString(param)))
+                .willReturn(aResponse().withBody(JSON.toJSONString(resultBean))));
+        date = cityServiceWithResultBeanResponseProcessor.getDate(now);
+        assertEquals(date.getTime(), now.getTime());
+    }
 }

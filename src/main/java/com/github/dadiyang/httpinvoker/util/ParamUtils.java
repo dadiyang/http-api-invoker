@@ -27,7 +27,11 @@ public class ParamUtils {
     private static final String FORM_KEY = "formKey";
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
-            Boolean.class, String.class, Void.class);
+            Boolean.class, String.class, Void.class, Date.class);
+    /**
+     * for JDK6/7 compatibility
+     */
+    private static final List<String> BASIC_TYPE_NAME = Arrays.asList("java.time.LocalDate", "java.time.LocalDateTime");
 
     private ParamUtils() {
         throw new UnsupportedOperationException("utils should not be initialized!");
@@ -42,6 +46,10 @@ public class ParamUtils {
     public static boolean isBasicType(Class<?> clz) {
         if (clz == null) {
             return false;
+        }
+        // for JDK6/7 compatibility
+        if (BASIC_TYPE_NAME.contains(clz.getName())) {
+            return true;
         }
         return clz.isPrimitive() || BASIC_TYPE.contains(clz);
     }
