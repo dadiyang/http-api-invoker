@@ -33,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
  </dependency>
 ```
 
@@ -171,6 +171,10 @@ CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.clas
 City city = cityServiceWithResponseProcessor.getCity(id);
 ```
 
+整合 Spring 时，可以使用 @Import(ResultBeanResponseProcessor.class) 加入全局的结果处理器
+
+可以通过 @NotResultBean 注解声明此接口无需 ResultBeanResponseProcessor 来处理
+
 实践中，很多 HTTP 接口通常使用具有 code、msg或message、data 三个字段的类作为返回值，即 ResultBean 的形式: 
 
 ```json
@@ -189,7 +193,7 @@ City city = cityServiceWithResponseProcessor.getCity(id);
 
 若响应体返回的 code 值与期望值：
 
-* 不等时抛出异常，异常信息为 message 的内容
+* 不等时抛出 UnexpectedResultException 异常，异常信息为 message 的内容
 * 相等时解析 data 中的内容
 
 ## 七、文件上传

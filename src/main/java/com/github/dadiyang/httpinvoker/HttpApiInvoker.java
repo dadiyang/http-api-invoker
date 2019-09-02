@@ -140,15 +140,21 @@ public class HttpApiInvoker implements InvocationHandler {
             return null;
         }
         Object returnValue;
-        if (responseProcessor != null) {
-            returnValue = responseProcessor.process(response, method);
-        } else {
+        if (responseProcessor == null || notResultBean(method)) {
             returnValue = DEFAULT_RESPONSE_PROCESSOR.process(response, method);
+        } else {
+            returnValue = responseProcessor.process(response, method);
         }
         if (log.isDebugEnabled()) {
             log.debug("send request to url: {}, time consume: {} ms", request.getUrl(), (System.currentTimeMillis() - start));
         }
         return returnValue;
+    }
+
+    private boolean notResultBean(Method method) {
+        return responseProcessor instanceof ResultBeanResponseProcessor
+                && (method.isAnnotationPresent(NotResultBean.class)
+                || method.getDeclaringClass().isAnnotationPresent(NotResultBean.class));
     }
 
     private void addContentType(Method method, HttpRequest request) {

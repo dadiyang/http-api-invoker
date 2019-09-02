@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
+import com.github.dadiyang.httpinvoker.annotation.NotResultBean;
 import com.github.dadiyang.httpinvoker.exception.UnexpectedResultException;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
@@ -14,7 +15,10 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,8 +40,12 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
 
     @Override
     public Object process(HttpResponse response, Method method) throws UnexpectedResultException {
-        // 对返回值进行解析，code 为 0，则返回反序列化 data 的值，否则抛出异常
         String rs = response.getBody();
+        // 声明接口返回值不是 ResultBean，则直接解析
+        if (method.isAnnotationPresent(NotResultBean.class)
+                || method.getDeclaringClass().isAnnotationPresent(NotResultBean.class)) {
+            return parseObject(method, rs);
+        }
         // 以下几种情况下，无需解析响应
         if (rs == null || rs.trim().isEmpty()) {
             return null;

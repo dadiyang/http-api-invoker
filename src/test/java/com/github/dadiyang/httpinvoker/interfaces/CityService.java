@@ -204,4 +204,8 @@ public interface CityService {
      */
     @HttpReq(value = "/date", method = ReqMethod.POST)
     Date getDate(@Param("date") Date date);
+
+    @NotResultBean
+    @HttpReq(value = "/string")
+    String getString();
 }

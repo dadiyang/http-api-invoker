@@ -573,4 +573,15 @@ public class CityServiceTest {
         date = cityServiceWithResultBeanResponseProcessor.getDate(now);
         assertEquals(date.getTime(), now.getTime());
     }
+
+    @Test
+    public void getString() {
+        String uri = "/city/string";
+        String rs = "OK";
+        wireMockRule.stubFor(get(urlPathEqualTo(uri)).willReturn(aResponse().withBody(rs)));
+        String str = cityService.getString();
+        assertEquals(rs, str);
+        str = cityServiceWithResultBeanResponseProcessor.getString();
+        assertEquals(rs, str);
+    }
 }
