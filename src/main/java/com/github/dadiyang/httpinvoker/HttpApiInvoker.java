@@ -75,12 +75,18 @@ public class HttpApiInvoker implements InvocationHandler {
             if (TO_STRING.equals(method.getName()) && method.getParameterTypes().length == 0) {
                 return HTTP_API_PREFIX + this;
             }
-            // those Object's methods invoke 'this' method
-            if (this.getClass().getMethod(method.getName(), method.getParameterTypes()) != null) {
-                return method.invoke(this, args);
+            try {
+                // those Object's methods such as getClass/hasCode/equals invoke 'this' method
+                if (this.getClass().getMethod(method.getName(), method.getParameterTypes()) != null) {
+                    return method.invoke(this, args);
+                }
+            } catch (NoSuchMethodException ignored) {
+                //
+            } catch (SecurityException ignored) {
+
             }
             // this proxy only implement those HttpReq-annotated method
-            throw new IllegalStateException("this proxy only implement those HttpReq-annotated method");
+            throw new IllegalStateException("this proxy only implement those HttpReq-annotated method, please add a @HttpReq on it.");
         }
         HttpReq anno = method.getAnnotation(HttpReq.class);
         String url = prepareUrl(anno);
@@ -123,10 +129,15 @@ public class HttpApiInvoker implements InvocationHandler {
         addUserAgent(method, request);
 
         if (requestPreprocessor != null) {
-            requestPreprocessor.process(request);
+            try {
+                RequestPreprocessor.CURRENT_METHOD_THREAD_LOCAL.set(method);
+                requestPreprocessor.process(request);
+            } finally {
+                RequestPreprocessor.CURRENT_METHOD_THREAD_LOCAL.remove();
+            }
         }
-        // fill path variable again, so that user can provide some param by requestPreprocessor
-        url = fillPathVariables(request.getData(), url, true);
+        // fill path variable again, so that user can provide some params by requestPreprocessor
+        url = fillPathVariables(request.getData(), request.getUrl(), true);
         request.setUrl(url);
         long start = System.currentTimeMillis();
         HttpResponse response;
@@ -455,11 +466,18 @@ public class HttpApiInvoker implements InvocationHandler {
     private String fillPathVariables(Map<String, Object> params, String url, boolean exceptionOnNotProvided, boolean remove) {
         Pattern pattern = remove ? PATH_VARIABLE_PATTERN : PATH_NOT_REMOVE_VARIABLE_PATTERN;
         Matcher matcher = pattern.matcher(url);
+        String matchedKey;
         while (matcher.find()) {
             String key = matcher.group(1);
-            if (params == null
-                    || !params.containsKey(key)
-                    || params.get(key) == null) {
+            matchedKey = key;
+            String defaultValue = null;
+            // parse default value
+            if (key.contains(":")) {
+                String[] tmp = key.split(":", 2);
+                key = tmp[0];
+                defaultValue = tmp[1] == null ? "" : tmp[1];
+            }
+            if (defaultValue == null && !containsKey(params, key)) {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but not provided.";
                 log.warn(msg);
@@ -469,30 +487,43 @@ public class HttpApiInvoker implements InvocationHandler {
                     continue;
                 }
             }
-            String prop;
             if (remove) {
-                prop = params.remove(key).toString();
-                url = url.replace("{" + key + "}", prop);
+                String prop = containsKey(params, key) ? params.remove(key).toString() : defaultValue;
+                url = url.replace("{" + matchedKey + "}", prop);
             } else {
-                prop = params.get(key).toString();
-                url = url.replace("#{" + key + "}", prop);
+                String prop = containsKey(params, key) ? params.get(key).toString() : defaultValue;
+                url = url.replace("#{" + matchedKey + "}", prop);
             }
         }
         return url;
     }
 
+    private boolean containsKey(Map<String, Object> params, String key) {
+        return params != null
+                && params.containsKey(key)
+                && params.get(key) != null;
+    }
+
     private String fillConfigVariables(String url) {
         Matcher matcher = VARIABLE_PATTERN.matcher(url);
         while (matcher.find()) {
-            String key = matcher.group(1);
-            if (propertyResolver == null || !propertyResolver.containsProperty(key)) {
+            String matchedKey = matcher.group(1);
+            String key = matchedKey;
+            String defaultValue = null;
+            if (key.contains(":")) {
+                String[] tmp = key.split(":", 2);
+                key = tmp[0];
+                defaultValue = tmp[1];
+            }
+            if (defaultValue == null && (propertyResolver == null || !propertyResolver.containsProperty(key))) {
                 // path variable must be provided
                 String msg = "the url [" + url + "] needs a variable: [" + key + "], but not provided.";
                 log.warn(msg);
                 throw new IllegalArgumentException(msg);
             }
-            String prop = propertyResolver.getProperty(key);
-            url = url.replace("${" + key + "}", prop);
+            String val = propertyResolver.getProperty(key);
+            String prop = val == null ? defaultValue : val;
+            url = url.replace("${" + matchedKey + "}", prop);
         }
         return url;
     }

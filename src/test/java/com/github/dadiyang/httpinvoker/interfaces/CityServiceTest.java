@@ -136,12 +136,38 @@ public class CityServiceTest {
     }
 
     @Test
+    public void testWithConfigPathVariable() throws UnsupportedEncodingException {
+        String cityName = "北京";
+        String uri = "/city/getCityByName?name=" + URLEncoder.encode(cityName, "UTF-8") + "&id=";
+        City city = createCity(cityName);
+        ResultBean<City> mockCityResult = new ResultBean<City>(0, city);
+        wireMockRule.stubFor(get(urlEqualTo(uri))
+                .willReturn(aResponse().withBody(JSON.toJSONString(mockCityResult))));
+        ResultBean<City> cityResultBean = cityService.getCityByNameWithConfigVariable();
+        assertEquals(mockCityResult, cityResultBean);
+
+        // 测试如果返回值是 resultBean 时，尽管添加了 ResultBeanResponseProcessor 也不做特殊处理
+        cityResultBean = cityServiceWithResultBeanResponseProcessor.getCityByNameWithConfigVariable();
+        assertEquals("返回值是 resultBean 时，ResultBeanResponseProcessor 不应做特殊处理", mockCityResult, cityResultBean);
+    }
+
+    @Test
     public void getCityRest() {
         int id = 1;
         String uri = "/city/getCityRest/" + id;
         City mockCity = createCity(id);
         wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
         City result = cityService.getCityRest(id);
+        assertEquals(mockCity, result);
+    }
+
+    @Test
+    public void getCityRestWithDefaultPathVal() {
+        int id = 1;
+        String uri = "/city/getCityRest/" + id;
+        City mockCity = createCity(id);
+        wireMockRule.stubFor(get(urlEqualTo(uri)).willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
+        City result = cityService.getCityRestWithDefaultPathVal(null);
         assertEquals(mockCity, result);
     }
 
@@ -256,18 +282,30 @@ public class CityServiceTest {
         String uri = "/city/listCity";
         String headerKey = "header1";
         String headerValue = "value11";
+        String cookie1 = "c1=c; path=\"/\", c2=cc; domain=\"localhost\"";
+        String cookie2 = "c3=ccc; path=\"/\", c2=cc; domain=\"localhost\"";
         wireMockRule.stubFor(get(urlEqualTo(uri))
                 // 带了 header 的响应
                 .willReturn(okJson(JSON.toJSONString(mockCities))
                         .withHeader(headerKey, headerValue)
-                        .withHeader("Set-Cookie", "c1=c; path=\"/\", c2=cc; domain=\"localhost\"")
-                        .withHeader("Set-Cookie", "c3=ccc; path=\"/\", c2=cc; domain=\"localhost\"")));
+                        .withHeader("Set-Cookie", cookie1)
+                        .withHeader("Set-Cookie", cookie2)));
         HttpResponse response = cityService.listCity();
         System.out.println("获取到headers:" + response.getHeaders());
         assertEquals(headerValue, response.getHeader(headerKey));
         assertEquals("application/json", response.getHeader("Content-Type"));
         assertEquals("c", response.getCookie("c1"));
         assertEquals("ccc", response.getCookie("c3"));
+
+        Map<String, List<String>> headers = response.multiHeaders();
+        System.out.println(headers);
+        assertEquals(headers.get("Content-Type"), Collections.singletonList("application/json"));
+        assertEquals(headers.get("Set-Cookie"), Arrays.asList(cookie1, cookie2));
+        for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+            List<String> setCookieHeaders = response.getHeaders(entry.getKey());
+            System.out.println(setCookieHeaders);
+            assertEquals(setCookieHeaders, entry.getValue());
+        }
         List<City> cityList = JSON.parseArray(response.getBody(), City.class);
         assertTrue(mockCities.containsAll(cityList));
         assertTrue(cityList.containsAll(mockCities));
@@ -425,6 +463,14 @@ public class CityServiceTest {
             public void process(HttpRequest request) {
                 request.addCookie("authCookies", authKey);
                 request.addHeader("authHeaders", authKey);
+                Method method = CURRENT_METHOD_THREAD_LOCAL.get();
+                System.out.println("current method " + method.getName());
+                try {
+                    assertEquals(CityService.class.getMethod("getCity", int.class), method);
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                    fail("");
+                }
             }
         });
         CityService cityServiceWithPreprocessor = factory.getProxy(CityService.class);
@@ -436,6 +482,7 @@ public class CityServiceTest {
                 .withHeader("authHeaders", equalTo(authKey))
                 .willReturn(aResponse().withBody(JSON.toJSONString(mockCity))));
         City city = cityServiceWithPreprocessor.getCity(id);
+        assertNull("当前方法ThreadLocal应及时清理", RequestPreprocessor.CURRENT_METHOD_THREAD_LOCAL.get());
         assertEquals(mockCity, city);
     }
 
@@ -568,7 +615,7 @@ public class CityServiceTest {
 
         ResultBean<Date> resultBean = new ResultBean<Date>(0, now);
         wireMockRule.stubFor(post(urlPathEqualTo(uri))
-                .withRequestBody(equalToJson(JSON.toJSONString(param)))
+                .withRequestBody(equalToJson(JSON.toJSONStringWithDateFormat(param, "")))
                 .willReturn(aResponse().withBody(JSON.toJSONString(resultBean))));
         date = cityServiceWithResultBeanResponseProcessor.getDate(now);
         assertEquals(date.getTime(), now.getTime());

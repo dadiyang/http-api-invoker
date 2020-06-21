@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public interface Requestor {
     /**
-     * 发送语法
+     * 发送请求
      *
      * @param request the request info
      * @return 发送请求后的返回值

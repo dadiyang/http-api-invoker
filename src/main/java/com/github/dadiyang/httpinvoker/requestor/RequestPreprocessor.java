@@ -1,5 +1,7 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
+import java.lang.reflect.Method;
+
 /**
  * pre-process request before send it.
  * <p>
@@ -9,6 +11,10 @@ package com.github.dadiyang.httpinvoker.requestor;
  * date 2019/1/9
  */
 public interface RequestPreprocessor {
+    /**
+     * for compatible, we use a ThreadLocal to store current method
+     */
+    ThreadLocal<Method> CURRENT_METHOD_THREAD_LOCAL = new ThreadLocal<Method>();
 
     /**
      * Pre-processing the request

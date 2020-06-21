@@ -43,6 +43,6 @@ public class DefaultResponseProcessor implements ResponseProcessor {
         // get generic return type
         Type type = method.getGenericReturnType();
         type = type == null ? method.getReturnType() : type;
-        return JSON.parseObject(response.getBodyAsBytes(), type);
+        return JSON.parseObject(response.getBody(), type);
     }
 }

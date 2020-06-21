@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class HttpRequest {
     private String method = "GET";
-    private int timeout = 30000;
+    private int timeout = 5000;
     private String url;
     private Map<String, String> headers;
     private Map<String, String> cookies;

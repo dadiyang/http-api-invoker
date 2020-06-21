@@ -19,8 +19,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +35,6 @@ import static com.github.dadiyang.httpinvoker.util.ParamUtils.*;
  * @since 2019-06-13
  */
 public class HttpClientRequestor implements Requestor {
-    private static final Logger log = LoggerFactory.getLogger(HttpClientRequestor.class);
     private static final String FORM_URLENCODED = "application/x-www-form-urlencoded";
     private static final String APPLICATION_JSON = "application/json";
     private static final String CONTENT_TYPE = "Content-Type";
@@ -52,8 +49,11 @@ public class HttpClientRequestor implements Requestor {
     }
 
     private CloseableHttpClient createHttpClient() {
+        PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        poolingHttpClientConnectionManager.setMaxTotal(32);
+        poolingHttpClientConnectionManager.setDefaultMaxPerRoute(16);
         return HttpClients.custom()
-                .setConnectionManager(new PoolingHttpClientConnectionManager())
+                .setConnectionManager(poolingHttpClientConnectionManager)
                 .build();
     }
 
