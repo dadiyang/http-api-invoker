@@ -33,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.2</version>
+    <version>1.2.3</version>
  </dependency>
 ```
 
@@ -117,6 +117,7 @@ public void test() {
 * 配置占位符：${}，如 ${api.url.city}
 * 路径参数占位符：{}，如 {cityId}
 * 保留到请求参数中的路径参数占位符：#{}，如 #{cityId}
+* 可以通过 : 分隔来指定默认值，如 ${api.url.city:北京} {cityId:1} #{cityId:}
 
 配置占位符中的配置项将会从以下几个来源中获取：
 
@@ -149,6 +150,8 @@ public void preprocessorTest() {
         // 我们为所有的请求都加上 cookie 和 header
         request.addCookie("authCookies", authKey);
         request.addHeader("authHeaders", authKey);
+        // 可以通过 CURRENT_METHOD_THREAD_LOCAL 获取到当前的被代理的方法
+        Method method = CURRENT_METHOD_THREAD_LOCAL.get();
     });
     CityService cityService = factory.getProxy(CityService.class);
     City city = cityService.getCity(id);
