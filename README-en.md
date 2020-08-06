@@ -31,7 +31,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.3</version>
  </dependency>
 ```
 
@@ -114,6 +114,7 @@ Note：
 - path variable using **`{}`**, 
 - path variable and keep it in request params using **`#{}`**,
 - and config using **`${}`**.
+- set default value through : , such as ${api.url.city:beijing} {cityId:1} #{cityId:}
 
 The framework will get the config property from: 
 
@@ -149,6 +150,8 @@ public void preprocessorTest() {
         // we add cookie and header for all request invoked by the proxy get from this factory
         request.addCookie("authCookies", authKey);
         request.addHeader("authHeaders", authKey);
+        // get current proxied method from CURRENT_METHOD_THREAD_LOCAL
+        Method method = CURRENT_METHOD_THREAD_LOCAL.get();
     });
     CityService cityService = factory.getProxy(CityService.class);
     City city = cityService.getCity(id);

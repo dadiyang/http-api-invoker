@@ -13,7 +13,7 @@ import java.util.*;
  * @author huangxuyang
  * @since 2019-06-13
  */
-public class HttpClientResponse extends HttpResponse {
+public class HttpClientResponse implements HttpResponse {
     public static final String SET_COOKIE = "set-cookie";
     private final CloseableHttpResponse response;
 

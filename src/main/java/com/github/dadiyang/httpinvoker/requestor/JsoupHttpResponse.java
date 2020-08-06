@@ -10,7 +10,7 @@ import java.util.Map;
  * @author huangxuyang
  * date 2018/12/6
  */
-public class JsoupHttpResponse extends HttpResponse {
+public class JsoupHttpResponse implements HttpResponse {
     private final Connection.Response response;
 
     public JsoupHttpResponse(Connection.Response response) {

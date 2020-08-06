@@ -66,10 +66,22 @@ public interface CityService {
     ResultBean<City> getCityByName(@Param("name") String name);
 
     /**
+     * 使用完整的路径，不会添加前缀
+     */
+    @HttpReq(value = "/getCityByName?name=${name:北京}&id=${id:}")
+    ResultBean<City> getCityByNameWithConfigVariable();
+
+    /**
      * 支持路径参数
      */
     @HttpReq("/getCityRest/{id}")
     City getCityRest(@Param("id") Integer id);
+
+    /**
+     * 支持路径参数
+     */
+    @HttpReq("/getCityRest/{id:1}")
+    City getCityRestWithDefaultPathVal(@Param("id") Integer id);
 
     /**
      * 获取请求体，可以拿到请求头和cookie等信息
@@ -200,8 +212,17 @@ public interface CityService {
     void invalidMethod();
 
     /**
+     * 测试没有打 HttpReq 注解
+     */
+    void invalidMethodWithoutHttpReq();
+
+    /**
      * 测试 date 类型参数及返回值
      */
     @HttpReq(value = "/date", method = ReqMethod.POST)
     Date getDate(@Param("date") Date date);
+
+    @NotResultBean
+    @HttpReq(value = "/string")
+    String getString();
 }

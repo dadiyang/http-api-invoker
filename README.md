@@ -33,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.3</version>
  </dependency>
 ```
 
@@ -117,6 +117,7 @@ public void test() {
 * 配置占位符：${}，如 ${api.url.city}
 * 路径参数占位符：{}，如 {cityId}
 * 保留到请求参数中的路径参数占位符：#{}，如 #{cityId}
+* 可以通过 : 分隔来指定默认值，如 ${api.url.city:北京} {cityId:1} #{cityId:}
 
 配置占位符中的配置项将会从以下几个来源中获取：
 
@@ -149,6 +150,8 @@ public void preprocessorTest() {
         // 我们为所有的请求都加上 cookie 和 header
         request.addCookie("authCookies", authKey);
         request.addHeader("authHeaders", authKey);
+        // 可以通过 CURRENT_METHOD_THREAD_LOCAL 获取到当前的被代理的方法
+        Method method = CURRENT_METHOD_THREAD_LOCAL.get();
     });
     CityService cityService = factory.getProxy(CityService.class);
     City city = cityService.getCity(id);
@@ -171,6 +174,10 @@ CityService cityServiceWithResponseProcessor = factory.getProxy(CityService.clas
 City city = cityServiceWithResponseProcessor.getCity(id);
 ```
 
+整合 Spring 时，可以使用 @Import(ResultBeanResponseProcessor.class) 加入全局的结果处理器
+
+可以通过 @NotResultBean 注解声明此接口无需 ResultBeanResponseProcessor 来处理
+
 实践中，很多 HTTP 接口通常使用具有 code、msg或message、data 三个字段的类作为返回值，即 ResultBean 的形式: 
 
 ```json
@@ -189,7 +196,7 @@ City city = cityServiceWithResponseProcessor.getCity(id);
 
 若响应体返回的 code 值与期望值：
 
-* 不等时抛出异常，异常信息为 message 的内容
+* 不等时抛出 UnexpectedResultException 异常，异常信息为 message 的内容
 * 相等时解析 data 中的内容
 
 ## 七、文件上传

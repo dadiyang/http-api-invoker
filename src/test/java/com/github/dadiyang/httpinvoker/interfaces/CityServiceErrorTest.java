@@ -152,4 +152,14 @@ public class CityServiceErrorTest {
     public void invalidMethod() {
         cityService.invalidMethod();
     }
+
+    @Test
+    public void invalidMethodWithoutHttpReq() {
+        try {
+            cityService.invalidMethodWithoutHttpReq();
+            fail("should throws an exception when invoke the method without annotated with @HttpReq");
+        } catch (IllegalStateException e) {
+            assertEquals(e.getMessage(), "this proxy only implement those HttpReq-annotated method, please add a @HttpReq on it.");
+        }
+    }
 }
