@@ -1,10 +1,9 @@
 package com.github.dadiyang.httpinvoker.util;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.MultiPart;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -28,6 +27,7 @@ public class ParamUtils {
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Void.class, Date.class);
+    private static final JsonSerializer JSON_SERIALIZER = JsonSerializerDecider.getJsonSerializer();
     /**
      * for JDK6/7 compatibility
      */
@@ -108,7 +108,7 @@ public class ParamUtils {
                 }
             }
         } else {
-            JSONObject obj = JSON.parseObject(JSON.toJSONString(value));
+            Map<String, Object> obj = JSON_SERIALIZER.toMap(JSON_SERIALIZER.serialize(value));
             for (Map.Entry<String, Object> entry : obj.entrySet()) {
                 String key;
                 if (prefix == null || prefix.isEmpty()) {
@@ -139,7 +139,7 @@ public class ParamUtils {
             return "";
         }
         StringBuilder qs = new StringBuilder("?");
-        JSONObject obj = JSON.parseObject(JSON.toJSONString(arg));
+        Map<String, Object> obj = JSON_SERIALIZER.toMap(JSON_SERIALIZER.serialize(arg));
         for (Map.Entry<String, Object> entry : obj.entrySet()) {
             if (isCollection(entry.getValue())) {
                 qs.append(collectionToQueryString(obj, entry));
@@ -155,8 +155,8 @@ public class ParamUtils {
         return qs.substring(0, qs.length() - 1);
     }
 
-    private static String collectionToQueryString(JSONObject obj, Map.Entry<String, Object> entry) {
-        JSONArray arr = obj.getJSONArray(entry.getKey());
+    private static String collectionToQueryString(Map<String, Object> obj, Map.Entry<String, Object> entry) {
+        List<Object> arr = JSON_SERIALIZER.parseArray(ObjectUtils.toString(obj.get(entry.getKey())));
         StringBuilder valBuilder = new StringBuilder();
         for (Object item : arr) {
             valBuilder.append(entry.getKey()).append("=").append(item).append("&");

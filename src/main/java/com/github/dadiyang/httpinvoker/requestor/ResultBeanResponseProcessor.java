@@ -1,11 +1,11 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.annotation.NotResultBean;
 import com.github.dadiyang.httpinvoker.exception.UnexpectedResultException;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
@@ -15,10 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -37,6 +34,11 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     private static final String MESSAGE = "message";
     private static final String MSG = "msg";
     private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<Class<?>, Boolean>();
+    private JsonSerializer jsonSerializer;
+
+    public ResultBeanResponseProcessor() {
+        this.jsonSerializer = JsonSerializerDecider.getJsonSerializer();
+    }
 
     @Override
     public Object process(HttpResponse response, Method method) throws UnexpectedResultException {
@@ -65,7 +67,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (ObjectUtils.equals(isResultBean(expectedCode, returnType), true)) {
             return parseObject(method, rs);
         }
-        JSONObject obj = JSON.parseObject(rs);
+        Map<String, Object> obj = jsonSerializer.toMap(rs);
         if (isResponseNotResultBean(expectedCode, obj)) {
             // 非 ResultBean 则解析整个返回结果
             return parseObject(method, rs);
@@ -74,19 +76,19 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         //  标准的 ResultBean 包装类处理，进行解包处理，即只取 data 的值
         if (isExpectedCode(expectedCode, obj)) {
             // code 为期望的值时说明返回结果是正确的
-            return parseObject(method, obj.getString(DATA));
+            return parseObject(method, ObjectUtils.toString(obj.get(DATA)));
         } else {
             // 否则为接口返回错误
             HttpReq req = method.getAnnotation(HttpReq.class);
             String uri = req != null ? req.value() : method.getName();
             // 兼容两种错误信息的写法
-            String errMsg = obj.containsKey(MESSAGE) ? obj.getString(MESSAGE) : obj.getString(MSG);
+            String errMsg = obj.containsKey(MESSAGE) ? ObjectUtils.toString(obj.get(MESSAGE)) : ObjectUtils.toString(obj.get(MSG));
             log.warn("请求api失败, uri: " + uri + ", 错误信息: " + errMsg);
             throw new UnexpectedResultException(errMsg);
         }
     }
 
-    private boolean isExpectedCode(ExpectedCode expectedCode, JSONObject obj) {
+    private boolean isExpectedCode(ExpectedCode expectedCode, Map<String, Object> obj) {
         if (expectedCode != null) {
             return isExpectedCode(obj, expectedCode.value(), expectedCode.codeFieldName(), expectedCode.ignoreFieldInitialCase());
         }
@@ -95,12 +97,12 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     }
 
 
-    private boolean isExpectedCode(JSONObject obj, int expectedCode, String codeField, boolean ignoreFieldInitialCase) {
+    private boolean isExpectedCode(Map<String, Object> obj, int expectedCode, String codeField, boolean ignoreFieldInitialCase) {
         // 如果没有，而且需要忽略首字母大小写，则改变首字母大小写
         if (!obj.containsKey(codeField) && ignoreFieldInitialCase) {
             codeField = ParamUtils.changeInitialCase(codeField);
         }
-        return ObjectUtils.equals(expectedCode, obj.getInteger(codeField));
+        return ObjectUtils.equals(expectedCode, Integer.parseInt(obj.get(codeField).toString()));
     }
 
     private ExpectedCode getExpectedAnnotation(Method method) {
@@ -168,7 +170,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     /**
      * 没有包含 code、msg/message 和 data 则不是 ResultBean
      */
-    private boolean isResponseNotResultBean(ExpectedCode expectedCode, JSONObject obj) {
+    private boolean isResponseNotResultBean(ExpectedCode expectedCode, Map<String, Object> obj) {
         boolean hasCode = false;
         boolean hasMsg = false;
         boolean hasData = false;
@@ -199,6 +201,6 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
                 || method.getReturnType() == CharSequence.class) {
             return dataString;
         }
-        return JSON.parseObject(dataString, method.getGenericReturnType());
+        return jsonSerializer.parseObject(dataString, method.getGenericReturnType());
     }
 }

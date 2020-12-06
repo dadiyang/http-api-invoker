@@ -1,6 +1,7 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
-import com.alibaba.fastjson.JSON;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 
 import java.io.BufferedInputStream;
@@ -12,6 +13,8 @@ import java.lang.reflect.Type;
  * date 2019/2/21
  */
 public class DefaultResponseProcessor implements ResponseProcessor {
+    private JsonSerializer jsonSerializer = JsonSerializerDecider.getJsonSerializer();
+
     @Override
     public Object process(HttpResponse response, Method method) {
         // not need a return value
@@ -43,6 +46,6 @@ public class DefaultResponseProcessor implements ResponseProcessor {
         // get generic return type
         Type type = method.getGenericReturnType();
         type = type == null ? method.getReturnType() : type;
-        return JSON.parseObject(response.getBody(), type);
+        return jsonSerializer.parseObject(response.getBody(), type);
     }
 }

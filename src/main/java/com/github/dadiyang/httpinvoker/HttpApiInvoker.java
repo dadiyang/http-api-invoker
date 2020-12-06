@@ -1,10 +1,11 @@
 package com.github.dadiyang.httpinvoker;
 
-import com.alibaba.fastjson.JSON;
 import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.*;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
+import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +14,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +30,7 @@ import static com.github.dadiyang.httpinvoker.util.ParamUtils.isCollection;
 /**
  * an InvocationHandler which request the url that the annotation's value attribute specify when the annotated method is invoked.
  * <p>
- * And then parse the response body to the return value(if it has) using FastJson, generic type is also supported.
+ * And then parse the response body to the return value(if it has), generic type is also supported.
  *
  * @author huangxuyang
  * date 2018/11/27
@@ -45,6 +52,7 @@ public class HttpApiInvoker implements InvocationHandler {
     private Class<?> clazz;
     private RequestPreprocessor requestPreprocessor;
     private ResponseProcessor responseProcessor;
+    private JsonSerializer jsonSerializer = JsonSerializerDecider.getJsonSerializer();
 
     public HttpApiInvoker(Requestor requestor, Properties properties,
                           Class<?> clazz, RequestPreprocessor requestPreprocessor,
@@ -309,6 +317,7 @@ public class HttpApiInvoker implements InvocationHandler {
                 for (Status status : retryForStatus) {
                     if (statusCode >= status.getFrom() && statusCode <= status.getTo()) {
                         needRetry = true;
+                        break;
                     }
                 }
                 if (!needRetry) {
@@ -354,7 +363,7 @@ public class HttpApiInvoker implements InvocationHandler {
             // we don't handle collection param here
             params = null;
         } else {
-            params = JSON.parseObject(JSON.toJSONString(arg));
+            params = jsonSerializer.toMap(jsonSerializer.serialize(arg));
         }
         return params;
     }

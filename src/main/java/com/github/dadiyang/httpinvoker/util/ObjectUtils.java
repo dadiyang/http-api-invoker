@@ -18,4 +18,18 @@ public class ObjectUtils {
             throw new NullPointerException(message);
         }
     }
+
+    public static String toString(Object obj, String defaultVal) {
+        if (obj == null) {
+            return defaultVal;
+        }
+        return obj.toString();
+    }
+
+    public static String toString(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        return obj.toString();
+    }
 }
