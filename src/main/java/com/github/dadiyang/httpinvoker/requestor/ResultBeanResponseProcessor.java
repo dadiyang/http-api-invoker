@@ -4,7 +4,6 @@ import com.github.dadiyang.httpinvoker.annotation.ExpectedCode;
 import com.github.dadiyang.httpinvoker.annotation.HttpReq;
 import com.github.dadiyang.httpinvoker.annotation.NotResultBean;
 import com.github.dadiyang.httpinvoker.exception.UnexpectedResultException;
-import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
 import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
@@ -15,7 +14,10 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,11 +36,6 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
     private static final String MESSAGE = "message";
     private static final String MSG = "msg";
     private Map<Class<?>, Boolean> isResultBeanCache = new ConcurrentHashMap<Class<?>, Boolean>();
-    private JsonSerializer jsonSerializer;
-
-    public ResultBeanResponseProcessor() {
-        this.jsonSerializer = JsonSerializerDecider.getJsonSerializer();
-    }
 
     @Override
     public Object process(HttpResponse response, Method method) throws UnexpectedResultException {
@@ -67,7 +64,7 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
         if (ObjectUtils.equals(isResultBean(expectedCode, returnType), true)) {
             return parseObject(method, rs);
         }
-        Map<String, Object> obj = jsonSerializer.toMap(rs);
+        Map<String, Object> obj = JsonSerializerDecider.getJsonSerializer().toMap(rs);
         if (isResponseNotResultBean(expectedCode, obj)) {
             // 非 ResultBean 则解析整个返回结果
             return parseObject(method, rs);
@@ -201,6 +198,6 @@ public class ResultBeanResponseProcessor implements ResponseProcessor {
                 || method.getReturnType() == CharSequence.class) {
             return dataString;
         }
-        return jsonSerializer.parseObject(dataString, method.getGenericReturnType());
+        return JsonSerializerDecider.getJsonSerializer().parseObject(dataString, method.getGenericReturnType());
     }
 }

@@ -4,7 +4,6 @@ import com.github.dadiyang.httpinvoker.annotation.*;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertiesBasePropertyResolver;
 import com.github.dadiyang.httpinvoker.propertyresolver.PropertyResolver;
 import com.github.dadiyang.httpinvoker.requestor.*;
-import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
 import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
 import org.slf4j.Logger;
@@ -52,7 +51,6 @@ public class HttpApiInvoker implements InvocationHandler {
     private Class<?> clazz;
     private RequestPreprocessor requestPreprocessor;
     private ResponseProcessor responseProcessor;
-    private JsonSerializer jsonSerializer = JsonSerializerDecider.getJsonSerializer();
 
     public HttpApiInvoker(Requestor requestor, Properties properties,
                           Class<?> clazz, RequestPreprocessor requestPreprocessor,
@@ -363,7 +361,7 @@ public class HttpApiInvoker implements InvocationHandler {
             // we don't handle collection param here
             params = null;
         } else {
-            params = jsonSerializer.toMap(jsonSerializer.serialize(arg));
+            params = JsonSerializerDecider.getJsonSerializer().toMap(JsonSerializerDecider.getJsonSerializer().serialize(arg));
         }
         return params;
     }

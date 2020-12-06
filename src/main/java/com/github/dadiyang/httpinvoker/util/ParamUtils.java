@@ -2,7 +2,6 @@ package com.github.dadiyang.httpinvoker.util;
 
 import com.github.dadiyang.httpinvoker.requestor.HttpRequest;
 import com.github.dadiyang.httpinvoker.requestor.MultiPart;
-import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
 import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 
 import java.io.*;
@@ -27,7 +26,6 @@ public class ParamUtils {
     private static final List<Class<?>> BASIC_TYPE = Arrays.asList(Byte.class, Short.class,
             Integer.class, Long.class, Float.class, Double.class, Character.class,
             Boolean.class, String.class, Void.class, Date.class);
-    private static final JsonSerializer JSON_SERIALIZER = JsonSerializerDecider.getJsonSerializer();
     /**
      * for JDK6/7 compatibility
      */
@@ -108,7 +106,7 @@ public class ParamUtils {
                 }
             }
         } else {
-            Map<String, Object> obj = JSON_SERIALIZER.toMap(JSON_SERIALIZER.serialize(value));
+            Map<String, Object> obj = JsonSerializerDecider.getJsonSerializer().toMap(JsonSerializerDecider.getJsonSerializer().serialize(value));
             for (Map.Entry<String, Object> entry : obj.entrySet()) {
                 String key;
                 if (prefix == null || prefix.isEmpty()) {
@@ -139,7 +137,7 @@ public class ParamUtils {
             return "";
         }
         StringBuilder qs = new StringBuilder("?");
-        Map<String, Object> obj = JSON_SERIALIZER.toMap(JSON_SERIALIZER.serialize(arg));
+        Map<String, Object> obj = JsonSerializerDecider.getJsonSerializer().toMap(JsonSerializerDecider.getJsonSerializer().serialize(arg));
         for (Map.Entry<String, Object> entry : obj.entrySet()) {
             if (isCollection(entry.getValue())) {
                 qs.append(collectionToQueryString(obj, entry));
@@ -156,7 +154,7 @@ public class ParamUtils {
     }
 
     private static String collectionToQueryString(Map<String, Object> obj, Map.Entry<String, Object> entry) {
-        List<Object> arr = JSON_SERIALIZER.parseArray(ObjectUtils.toString(obj.get(entry.getKey())));
+        List<Object> arr = JsonSerializerDecider.getJsonSerializer().parseArray(ObjectUtils.toString(obj.get(entry.getKey())));
         StringBuilder valBuilder = new StringBuilder();
         for (Object item : arr) {
             valBuilder.append(entry.getKey()).append("=").append(item).append("&");

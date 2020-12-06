@@ -1,6 +1,5 @@
 package com.github.dadiyang.httpinvoker.requestor;
 
-import com.github.dadiyang.httpinvoker.serializer.JsonSerializer;
 import com.github.dadiyang.httpinvoker.serializer.JsonSerializerDecider;
 import com.github.dadiyang.httpinvoker.util.ObjectUtils;
 import com.github.dadiyang.httpinvoker.util.ParamUtils;
@@ -41,7 +40,6 @@ public class HttpClientRequestor implements Requestor {
     private static final String APPLICATION_JSON = "application/json";
     private static final String CONTENT_TYPE = "Content-Type";
     private CloseableHttpClient httpClient;
-    private JsonSerializer jsonSerializer = JsonSerializerDecider.getJsonSerializer();
 
     /**
      * 使用默认的 httpClient 实现和配置
@@ -171,10 +169,10 @@ public class HttpClientRequestor implements Requestor {
             entity = new UrlEncodedFormEntity(parameters, "UTF-8");
         } else {
             if (request.getBody() != null) {
-                entity = new ByteArrayEntity(jsonSerializer.serialize(request.getBody()).getBytes(Charset.forName("UTF-8")),
+                entity = new ByteArrayEntity(JsonSerializerDecider.getJsonSerializer().serialize(request.getBody()).getBytes(Charset.forName("UTF-8")),
                         ContentType.create(APPLICATION_JSON, "UTF-8"));
             } else if (request.getData() != null) {
-                entity = new ByteArrayEntity(jsonSerializer.serialize(request.getData()).getBytes(Charset.forName("UTF-8")),
+                entity = new ByteArrayEntity(JsonSerializerDecider.getJsonSerializer().serialize(request.getData()).getBytes(Charset.forName("UTF-8")),
                         ContentType.create(APPLICATION_JSON, "UTF-8"));
             } else {
                 BasicHttpEntity basicHttpEntity = new BasicHttpEntity();
@@ -251,15 +249,7 @@ public class HttpClientRequestor implements Requestor {
         return httpClient;
     }
 
-    public JsonSerializer getJsonSerializer() {
-        return jsonSerializer;
-    }
-
     public void setHttpClient(CloseableHttpClient httpClient) {
         this.httpClient = httpClient;
-    }
-
-    public void setJsonSerializer(JsonSerializer jsonSerializer) {
-        this.jsonSerializer = jsonSerializer;
     }
 }
