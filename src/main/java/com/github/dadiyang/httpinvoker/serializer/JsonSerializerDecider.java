@@ -19,6 +19,11 @@ public class JsonSerializerDecider {
     private static Map<String, JsonSerializer> map = new ConcurrentHashMap<String, JsonSerializer>();
     private static String jsonInstanceKey;
 
+    /**
+     * 根据规则获取JSON序列化器实例
+     *
+     * @return JSON序列化器实例
+     */
     public static JsonSerializer getJsonSerializer() {
         if (jsonInstanceKey != null) {
             JsonSerializer instance = map.get(jsonInstanceKey);
@@ -47,6 +52,8 @@ public class JsonSerializerDecider {
 
     /**
      * 指定使用哪一个 jsonSerializer 实现，使用这个特性必须先使用 registerJsonSerializer 方法把这个key对应的序列化进行注册，否则无法正常使用
+     *
+     * @param jsonInstanceKey 实例key
      */
     public static void setJsonInstanceKey(String jsonInstanceKey) {
         JsonSerializerDecider.jsonInstanceKey = jsonInstanceKey;
@@ -54,6 +61,9 @@ public class JsonSerializerDecider {
 
     /**
      * 注册 json 序列化器
+     *
+     * @param key            实例key
+     * @param jsonSerializer 序列化器实例
      */
     public static void registerJsonSerializer(String key, JsonSerializer jsonSerializer) {
         map.put(key, jsonSerializer);

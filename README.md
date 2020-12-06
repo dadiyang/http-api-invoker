@@ -35,6 +35,12 @@
     <artifactId>http-api-invoker</artifactId>
     <version>1.2.4</version>
  </dependency>
+<!-- fastjson 或 gson 二选一即可 -->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.75</version>
+</dependency>
 ```
 
 ## 二、定义接口

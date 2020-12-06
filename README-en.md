@@ -33,8 +33,13 @@ The only thing we need to do is defining the interface.
     <artifactId>http-api-invoker</artifactId>
     <version>1.2.4</version>
  </dependency>
+<!-- choose between fastjson and gson -->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.75</version>
+</dependency>
 ```
-
 ## II. Define interface
 
 Provided `http://localhost:8080/city/allCities` response: 
