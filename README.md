@@ -33,7 +33,7 @@
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.4</version>
  </dependency>
 ```
 
@@ -198,6 +198,17 @@ City city = cityServiceWithResponseProcessor.getCity(id);
 
 * 不等时抛出 UnexpectedResultException 异常，异常信息为 message 的内容
 * 相等时解析 data 中的内容
+
+### JSON序列化器
+
+本项目JSON序列化/反序列化使用 FastJson，但是出现一些用户反馈由于公司规定等客观原因，他们无法引入 FastJson 的情况，所以我们对 序列化器 进行了解耦，**默认仍然采用 FastJson 实现**，如果有特殊需求，可以通过以下方法指定具体的实现：
+
+```java
+JsonSerializerDecider.registerJsonSerializer("Gson", GsonJsonSerializer.getInstance());
+JsonSerializerDecider.setJsonInstanceKey("Gson");
+```
+
+我们提供了 FastJson 和 Gson 两种实现，并通过个性化的配置使这两种实现的行为最大限度地保持一致，以让更换 JSON 实现不会影响到原有的代码。若你需要其他的实现，可以通过实现 `com.github.dadiyang.httpinvoker.serializer.JsonSerializer` 接口编写自己的实现，然后根据上面的 方式更换为自己的实现。
 
 ## 七、文件上传
 

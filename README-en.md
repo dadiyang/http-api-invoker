@@ -31,7 +31,7 @@ The only thing we need to do is defining the interface.
  <dependency>
     <groupId>com.github.dadiyang</groupId>
     <artifactId>http-api-invoker</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.4</version>
  </dependency>
 ```
 
@@ -198,6 +198,17 @@ It will check the code specify by @ExpectedCode annotation or 0 by default.
 If the code in response body is not equals to the expected one, an IllegalStateException will be thrown.
 
 If they are equal, the data field will be parse to return value, unless the method do not need it or its return type is a ResultBean.
+
+### JsonSerializer
+
+Fastjson is used for JSON serialization and deserialization in this project. However, some users reported that they could not introduce fastjson due to objective reasons such as the company's regulations. Therefore, we decouple the serializer and **still use fastjson by default**. If there are special requirements, the specific implementation can be specified by the following methods:
+
+```java
+JsonSerializerDecider.registerJsonSerializer("Gson", GsonJsonSerializer.getInstance());
+JsonSerializerDecider.setJsonInstanceKey("Gson");
+```
+
+We provided two implementations, fastjson and gson, and makes the behavior of these two implementations consistent to the maximum extent through some configuration, so that the replacement of JSON implementation will not affect the original code. If you need other implementations, you can do so through implementing ` com.github.dadiyang . httpinvoker.serializer.JsonSerializer` interface, and then according to the above way to replace your own implementation.
 
 # CORE ANNOTATION
 

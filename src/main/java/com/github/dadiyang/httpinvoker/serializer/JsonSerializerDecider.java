@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 默认依次检测当前类路径是否有 FastJson 和 Gson 以决定采用哪种实现
  * <p>
- * 使用者可以通过
+ * 使用者可以通过 registerJsonSerializer 注册自己指定的 Json 实现，然后调用 setJsonInstanceKey 指定已注册的 Json 实现
  *
  * @author dadiyang
  * @since 2020/12/5
